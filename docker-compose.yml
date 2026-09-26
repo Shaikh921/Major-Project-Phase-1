@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # Database (PostgreSQL)
+  postgres:
+    image: postgres:16-alpine
+    container_name: cip-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cloud_intelligence
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cip-network
+
+  # Cache & Message Broker (Redis)
+  redis:
+    image: redis:7-alpine
+    container_name: cip-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cip-network
+
+  # Backend Core API
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: cip-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@postgres:5432/cloud_intelligence
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - cip-network
+
+  # Monitoring Agent
+  monitoring-agent:
+    build:
+      context: .
+      dockerfile: monitoring_agent/Dockerfile
+    container_name: cip-monitoring-agent
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - cip-network
+
+  # Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cip-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
+    depends_on:
+      - backend
+    networks:
+      - cip-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  cip-network:
+    driver: bridge

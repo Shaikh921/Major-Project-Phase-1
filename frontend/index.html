@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloud Resource Monitoring & Intelligence Command Center</title>
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/command-center.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Persistent Sidebar -->
+    <aside id="sidebar" role="navigation" aria-label="Main Navigation">
+      <div class="sidebar-brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <span>CloudOps Intel</span>
+          <span class="brand-sub">SRE Command Center</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Operations</div>
+        <a class="nav-item active" data-view="overview">
+          <span class="nav-icon">📊</span>
+          <span>Overview</span>
+        </a>
+        <a class="nav-item" data-view="resources">
+          <span class="nav-icon">🖥️</span>
+          <span>Infrastructure</span>
+        </a>
+        <a class="nav-item" data-view="metrics">
+          <span class="nav-icon">📈</span>
+          <span>Telemetry Stream</span>
+        </a>
+
+        <div class="nav-section-title">Detection & Triage</div>
+        <a class="nav-item" data-view="anomalies">
+          <span class="nav-icon">🔍</span>
+          <span>Anomaly Center</span>
+        </a>
+        <a class="nav-item" data-view="incidents">
+          <span class="nav-icon">⚡</span>
+          <span>Incidents</span>
+        </a>
+        <a class="nav-item" data-view="security">
+          <span class="nav-icon">🛡️</span>
+          <span>Security & Threat</span>
+        </a>
+
+        <div class="nav-section-title">Intelligence & Analysis</div>
+        <a class="nav-item" data-view="cost">
+          <span class="nav-icon">💰</span>
+          <span>Cost Optimization</span>
+        </a>
+        <a class="nav-item" data-view="narrator">
+          <span class="nav-icon">🤖</span>
+          <span>AI Incident Narrator</span>
+        </a>
+        <a class="nav-item" data-view="reports">
+          <span class="nav-icon">📄</span>
+          <span>Reports & Export</span>
+        </a>
+
+        <div class="nav-section-title">Administration</div>
+        <a class="nav-item" data-view="audit">
+          <span class="nav-icon">📜</span>
+          <span>Audit Trail</span>
+        </a>
+        <a class="nav-item" data-view="settings">
+          <span class="nav-icon">⚙️</span>
+          <span>Threshold Rules</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="mono">v3.0.0-PROD</span>
+        <button class="btn btn-sm btn-icon" id="sidebar-collapse-btn" title="Toggle Sidebar">⇄</button>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Container -->
+    <main id="main-wrapper">
+      <!-- Top Application Header Bar -->
+      <header id="top-header" role="banner">
+        <div class="header-left">
+          <select id="global-env-select" class="select-control" aria-label="Environment Selection">
+            <option value="all">Env: All Environments</option>
+            <option value="production">Env: Production</option>
+            <option value="staging">Env: Staging</option>
+            <option value="development">Env: Development</option>
+          </select>
+
+          <select id="global-time-select" class="select-control" aria-label="Time Horizon Range">
+            <option value="15m">Time: Last 15 min</option>
+            <option value="1h" selected>Time: Last 1 hour</option>
+            <option value="6h">Time: Last 6 hours</option>
+            <option value="24h">Time: Last 24 hours</option>
+            <option value="7d">Time: Last 7 days</option>
+          </select>
+
+          <div class="search-container" id="global-search-trigger" role="search">
+            <span class="search-icon-left">🔍</span>
+            <input type="text" class="search-input" placeholder="Search resources, alerts..." readonly>
+            <span class="search-shortcut-badge">Ctrl+K</span>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div class="system-status-pill">
+            <span class="status-dot healthy"></span>
+            <span>SYSTEM OPERATIONAL</span>
+          </div>
+
+          <button class="btn btn-sm" id="notif-drawer-toggle" aria-label="Open notifications" style="position: relative;">
+            🔔
+            <span id="notif-badge" class="nav-badge" style="display: none; position: absolute; top: -4px; right: -4px;">0</span>
+          </button>
+
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; padding-left: 8px; border-left: 1px solid var(--border-subtle);">
+            <span class="mono text-muted">sre-admin@ops.local</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Active Workspace View Body -->
+      <section id="view-container" role="region" aria-live="polite">
+        <!-- Rendered dynamically by app.js -->
+      </section>
+    </main>
+
+    <!-- Notification Center Drawer -->
+    <aside id="notification-drawer" class="notification-drawer" role="complementary" aria-label="Notifications Drawer">
+      <!-- Populated dynamically by NotificationCenter.js -->
+    </aside>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+Phase 2: Security & Compliance Foundations (Days 2–3)
+Implement Audit Trail Writes: Add audit logging calls in host_service.py, alert_service.py, and security_service.py to record operator actions in audit_logs.
+Implement JWT Authentication: Add FastAPI security dependencies (OAuth2PasswordBearer, JWT verification) and protect all mutating /api/v1/* endpoints.
+Phase 3: Advanced ML & Live Integration (Days 4–5)
+Integrate LSTM into Live Alerting: Implement a rolling 15-step sliding window buffer per host in backend/app/services/ai_service.py to evaluate reconstruction error against threshold 0.7914 in real-time.
+Wire Security Detector into Metric Ingestion: Trigger security_engine.detect_egress_spike() directly inside metric_service.ingest_metric() when network spikes occur.
+Phase 4: Production Readiness & External Services (Week 2)
+LLM Integration: Enable optional LLM synthesis in narrator/engine.py when API keys are provided in .env.
+Cloud Provider Billing: Implement AWS Cost Explorer / Azure Consumption API connectors in cost_engine/.
+Containerization & CI/CD: Add multi-stage Dockerfiles and GitHub Actions workflow for automated test runs and container deployment.

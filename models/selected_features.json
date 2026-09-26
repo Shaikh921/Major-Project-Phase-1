@@ -1,0 +1,77 @@
+{
+  "feature_count": 30,
+  "features": [
+    "cluster_pending_cluster",
+    "cluster_restarts_cluster",
+    "cpu-N1",
+    "cpu-N2",
+    "cpu-N3",
+    "cpu-N4",
+    "cpu-N6",
+    "cpu-N7",
+    "cpu-N8",
+    "disk_io-N1",
+    "disk_io-N2",
+    "disk_io-N3",
+    "disk_io-N4",
+    "disk_io-N6",
+    "disk_io-N7",
+    "disk_io-N8",
+    "mem_gb-N1",
+    "mem_gb-N2",
+    "mem_gb-N3",
+    "mem_gb-N4",
+    "mem_gb-N6",
+    "mem_gb-N7",
+    "mem_gb-N8",
+    "net_in-N1",
+    "net_in-N2",
+    "net_in-N3",
+    "net_in-N4",
+    "net_in-N6",
+    "net_in-N7",
+    "net_in-N8"
+  ],
+  "categories": {
+    "cpu": [
+      "cpu-N1",
+      "cpu-N2",
+      "cpu-N3",
+      "cpu-N4",
+      "cpu-N6",
+      "cpu-N7",
+      "cpu-N8"
+    ],
+    "memory": [
+      "mem_gb-N1",
+      "mem_gb-N2",
+      "mem_gb-N3",
+      "mem_gb-N4",
+      "mem_gb-N6",
+      "mem_gb-N7",
+      "mem_gb-N8"
+    ],
+    "disk": [
+      "disk_io-N1",
+      "disk_io-N2",
+      "disk_io-N3",
+      "disk_io-N4",
+      "disk_io-N6",
+      "disk_io-N7",
+      "disk_io-N8"
+    ],
+    "network": [
+      "net_in-N1",
+      "net_in-N2",
+      "net_in-N3",
+      "net_in-N4",
+      "net_in-N6",
+      "net_in-N7",
+      "net_in-N8"
+    ],
+    "cluster": [
+      "cluster_pending_cluster",
+      "cluster_restarts_cluster"
+    ]
+  }
+}
