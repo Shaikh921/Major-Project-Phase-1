@@ -5,11 +5,12 @@
 import { api } from "../api.js";
 import { escapeHtml, formatRelativeTime, formatTimestamp, maskSensitive } from "../sanitizer.js";
 import { renderStatusBadge, renderSeverityBadge } from "../components/StatusBadge.js";
+import { renderIcon } from "../components/Icons.js";
 
 export async function renderSecurityView(container) {
   container.innerHTML = `
     <div class="state-container">
-      <div class="state-icon">⏳</div>
+      <div class="state-icon">${renderIcon("loader", { size: "xl", className: "icon-spin" })}</div>
       <div class="state-title">Loading Security Telemetry & Threat Stream...</div>
     </div>
   `;
@@ -27,7 +28,9 @@ export async function renderSecurityView(container) {
           <p>Real-time network flow inspection, authentication threat logging, and intrusion detection (M4).</p>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button class="btn btn-sm" id="security-refresh-btn">🔄 Refresh</button>
+          <button class="btn btn-sm" id="security-refresh-btn">
+            ${renderIcon("refresh-cw", { size: "sm" })} Refresh
+          </button>
         </div>
       </div>
 
@@ -70,7 +73,7 @@ export async function renderSecurityView(container) {
       <!-- Threat Events Table -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">🛡️ Intrusion & Security Event Log (${events.length})</span>
+          <span class="panel-title">${renderIcon("shield", { size: "sm" })} Intrusion & Security Event Log (${events.length})</span>
           <span class="text-muted mono" style="font-size: 11px;">Append-Only Tamper-Evident Stream</span>
         </div>
 
@@ -135,7 +138,7 @@ export async function renderSecurityView(container) {
   } catch (err) {
     container.innerHTML = `
       <div class="state-container">
-        <div class="state-icon text-critical">⚠️</div>
+        <div class="state-icon text-critical">${renderIcon("triangle-alert", { size: "xl" })}</div>
         <div class="state-title">Failed to load security view</div>
         <div class="state-desc">${escapeHtml(err.message)}</div>
       </div>

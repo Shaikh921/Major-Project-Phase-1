@@ -5,11 +5,12 @@
 import { api } from "../api.js";
 import { escapeHtml, formatRelativeTime, formatTimestamp } from "../sanitizer.js";
 import { renderStatusBadge, renderSeverityBadge } from "../components/StatusBadge.js";
+import { renderIcon } from "../components/Icons.js";
 
 export async function renderIncidentsView(container) {
   container.innerHTML = `
     <div class="state-container">
-      <div class="state-icon">⏳</div>
+      <div class="state-icon">${renderIcon("loader", { size: "xl", className: "icon-spin" })}</div>
       <div class="state-title">Loading Incident Stream...</div>
     </div>
   `;
@@ -24,21 +25,23 @@ export async function renderIncidentsView(container) {
           <p>Chronological incident progression, root cause triage, and resolution lifecycle.</p>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button class="btn btn-sm" id="incidents-refresh-btn">🔄 Refresh</button>
+          <button class="btn btn-sm" id="incidents-refresh-btn">
+            ${renderIcon("refresh-cw", { size: "sm" })} Refresh
+          </button>
         </div>
       </div>
 
       <!-- Incident Stream Panel -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">⚡ Chronological Incident Stream (${alerts.length})</span>
+          <span class="panel-title">${renderIcon("zap", { size: "sm" })} Chronological Incident Stream (${alerts.length})</span>
           <span class="text-muted" style="font-size: 11px;">Sorted by occurrence time</span>
         </div>
 
         <div class="timeline-list">
           ${alerts.length === 0 ? `
             <div class="state-container" style="padding: 30px;">
-              <span class="state-icon">✅</span>
+              <span class="state-icon">${renderIcon("circle-check", { size: "xl", className: "text-healthy" })}</span>
               <span class="state-title">Zero Active Incidents</span>
               <p class="state-desc">All telemetry signals are within normal operating parameters.</p>
             </div>
@@ -86,7 +89,7 @@ export async function renderIncidentsView(container) {
   } catch (err) {
     container.innerHTML = `
       <div class="state-container">
-        <div class="state-icon text-critical">⚠️</div>
+        <div class="state-icon text-critical">${renderIcon("triangle-alert", { size: "xl" })}</div>
         <div class="state-title">Failed to load incident stream</div>
         <div class="state-desc">${escapeHtml(err.message)}</div>
       </div>

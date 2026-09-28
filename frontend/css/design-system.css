@@ -256,6 +256,48 @@ html, body {
 }
 .btn-icon {
   padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Centralized SVG Icon System Styles */
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  stroke-width: 2;
+  stroke: currentColor;
+  fill: none;
+  width: 18px;
+  height: 18px;
+}
+.icon-xs {
+  width: 14px;
+  height: 14px;
+}
+.icon-sm {
+  width: 16px;
+  height: 16px;
+}
+.icon-md {
+  width: 18px;
+  height: 18px;
+}
+.icon-lg {
+  width: 22px;
+  height: 22px;
+}
+.icon-xl {
+  width: 32px;
+  height: 32px;
+}
+.icon-spin {
+  animation: icon-spin 1.2s linear infinite;
+}
+@keyframes icon-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Form Controls */
@@ -298,4 +340,17 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.panel-title .icon {
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.btn .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  flex-shrink: 0;
 }

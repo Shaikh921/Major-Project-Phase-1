@@ -4,6 +4,7 @@
 
 import { api } from "../api.js";
 import { escapeHtml, renderSafeMarkdown, formatTimestamp } from "../sanitizer.js";
+import { renderIcon } from "../components/Icons.js";
 
 export async function renderNarratorView(container) {
   container.innerHTML = `
@@ -23,7 +24,9 @@ export async function renderNarratorView(container) {
       <div class="narrator-chat-box">
         <div class="narrator-messages" id="narrator-chat-history">
           <div class="message-bubble assistant">
-            <div style="font-weight: 700; color: var(--status-ai); margin-bottom: 6px;">🤖 SRE Incident Intelligence Agent</div>
+            <div style="font-weight: 700; color: var(--status-ai); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+              ${renderIcon("bot", { size: "sm" })} SRE Incident Intelligence Agent
+            </div>
             <div>
               Welcome to the <strong>AI Incident Narrator</strong>. I continuously correlate multi-domain signals across Performance Metrics, Isolation Forest & LSTM Anomaly Residuals, Security Flow Logs, and Cloud Cost Catalogs.
               <br><br>
@@ -33,33 +36,36 @@ export async function renderNarratorView(container) {
         </div>
 
         <div class="narrator-input-bar">
-          <input type="text" id="narrator-input" class="input-control" placeholder="Ask about fleet health, root cause, security correlations..." style="flex: 1;">
+          <input type="text" id="narrator-input" class="input-control" placeholder="Ask about fleet health, root cause, security correlations..." style="flex: 1;" aria-label="Narrator inquiry">
           <button class="btn btn-primary" id="narrator-send-btn">Ask Narrator ⏎</button>
         </div>
       </div>
 
       <!-- Quick Investigation Presets -->
       <div class="panel" style="display: flex; flex-direction: column; gap: 12px;">
-        <span class="panel-title">⚡ Investigation Presets</span>
+        <span class="panel-title">${renderIcon("zap", { size: "sm" })} Investigation Presets</span>
 
         <button class="btn btn-sm narrator-preset" data-query="What is the current health status and any active incident alerts across the fleet?">
-          🔍 Fleet Health & Incidents
+          ${renderIcon("search", { size: "xs" })} Fleet Health & Incidents
         </button>
 
         <button class="btn btn-sm narrator-preset" data-query="Correlate recent security intrusion events with CPU or network anomalies.">
-          🛡️ Correlate Security & Performance
+          ${renderIcon("shield", { size: "xs" })} Correlate Security & Performance
         </button>
 
         <button class="btn btn-sm narrator-preset" data-query="Identify idle or over-provisioned cloud instances and summarize potential monthly savings.">
-          💰 Cost Optimization Opportunities
+          ${renderIcon("wallet", { size: "xs" })} Cost Optimization Opportunities
         </button>
 
         <button class="btn btn-sm narrator-preset" data-query="Are there any persistent memory leaks or disk exhaustion trends predicted?">
-          📈 Predictive Failure & Forecasts
+          ${renderIcon("activity", { size: "xs" })} Predictive Failure & Forecasts
         </button>
 
-        <div style="margin-top: auto; padding: 10px; background: var(--bg-surface-elevated); border-radius: var(--radius-sm); font-size: 11px; color: var(--text-muted);">
-          <strong>🔒 Grounded AI Guarantee:</strong> Responses are deterministically joined from active database records and telemetry models. Inferences must be verified before executing remediation.
+        <div style="margin-top: auto; padding: 10px; background: var(--bg-surface-elevated); border-radius: var(--radius-sm); font-size: 11px; color: var(--text-muted); display: flex; align-items: flex-start; gap: 6px;">
+          <span style="flex-shrink: 0; margin-top: 2px;">${renderIcon("lock", { size: "xs" })}</span>
+          <div>
+            <strong>Grounded AI Guarantee:</strong> Responses are deterministically joined from active database records and telemetry models. Inferences must be verified before executing remediation.
+          </div>
         </div>
       </div>
     </div>
@@ -91,7 +97,9 @@ export async function renderNarratorView(container) {
       const resp = await api.queryNarrator(q);
       
       loadingMsg.innerHTML = `
-        <div style="font-weight: 700; color: var(--status-ai); margin-bottom: 8px;">🤖 Grounded Incident Explanation</div>
+        <div style="font-weight: 700; color: var(--status-ai); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+          ${renderIcon("bot", { size: "sm" })} Grounded Incident Explanation
+        </div>
         <div>${renderSafeMarkdown(resp.raw_markdown_narrative)}</div>
         <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-subtle); font-size: 10.5px; color: var(--text-muted);">
           <strong>CITED DATA SOURCES:</strong> ${resp.structured_explanation.cited_data_sources.map(s => `<code class="mono" style="background: var(--bg-app); padding: 1px 4px; border-radius: 2px;">${escapeHtml(s)}</code>`).join(" ")}

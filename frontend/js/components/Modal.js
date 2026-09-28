@@ -3,6 +3,7 @@
  */
 
 import { escapeHtml } from "../sanitizer.js";
+import { renderIcon } from "./Icons.js";
 
 let activeModal = null;
 
@@ -18,7 +19,9 @@ export function openModal(title, contentHtml, footerHtml = "") {
     <div class="modal-dialog">
       <div class="modal-header">
         <h3 class="modal-title">${escapeHtml(title)}</h3>
-        <button class="btn btn-sm btn-icon" id="modal-close-btn" aria-label="Close dialog">✕</button>
+        <button class="btn btn-sm btn-icon" id="modal-close-btn" aria-label="Close dialog">
+          ${renderIcon("x", { size: "sm" })}
+        </button>
       </div>
       <div class="modal-body">${contentHtml}</div>
       ${footerHtml ? `<div class="modal-footer">${footerHtml}</div>` : ""}

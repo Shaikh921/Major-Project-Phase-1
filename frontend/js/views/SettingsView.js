@@ -6,11 +6,12 @@ import { api } from "../api.js";
 import { escapeHtml, formatTimestamp } from "../sanitizer.js";
 import { renderSeverityBadge } from "../components/StatusBadge.js";
 import { openModal, closeModal } from "../components/Modal.js";
+import { renderIcon } from "../components/Icons.js";
 
 export async function renderSettingsView(container) {
   container.innerHTML = `
     <div class="state-container">
-      <div class="state-icon">⏳</div>
+      <div class="state-icon">${renderIcon("loader", { size: "xl", className: "icon-spin" })}</div>
       <div class="state-title">Loading Alert Rules & Configuration...</div>
     </div>
   `;
@@ -25,14 +26,16 @@ export async function renderSettingsView(container) {
           <p>Configure static threshold evaluation boundaries, detection parameters, and sensitivity settings.</p>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button class="btn btn-primary btn-sm" id="create-rule-btn">+ New Alert Rule</button>
+          <button class="btn btn-primary btn-sm" id="create-rule-btn">
+            ${renderIcon("plus", { size: "xs" })} New Alert Rule
+          </button>
         </div>
       </div>
 
       <!-- Configured Alert Rules Table -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">⚙️ Active Alert Threshold Rules (${rules.length})</span>
+          <span class="panel-title">${renderIcon("sliders", { size: "sm" })} Active Alert Threshold Rules (${rules.length})</span>
         </div>
 
         <div class="table-container">
@@ -85,7 +88,7 @@ export async function renderSettingsView(container) {
   } catch (err) {
     container.innerHTML = `
       <div class="state-container">
-        <div class="state-icon text-critical">⚠️</div>
+        <div class="state-icon text-critical">${renderIcon("triangle-alert", { size: "xl" })}</div>
         <div class="state-title">Failed to load rules</div>
         <div class="state-desc">${escapeHtml(err.message)}</div>
       </div>

@@ -8,11 +8,12 @@ import { renderStatusBadge } from "../components/StatusBadge.js";
 import { renderSparkbar } from "../components/Sparkbar.js";
 import { openModal, closeModal } from "../components/Modal.js";
 import { store } from "../config.js";
+import { renderIcon } from "../components/Icons.js";
 
 export async function renderResourcesView(container) {
   container.innerHTML = `
     <div class="state-container">
-      <div class="state-icon">⏳</div>
+      <div class="state-icon">${renderIcon("loader", { size: "xl", className: "icon-spin" })}</div>
       <div class="state-title">Loading Infrastructure Inventory...</div>
     </div>
   `;
@@ -36,8 +37,8 @@ export async function renderResourcesView(container) {
           <p>Real-time cluster inventory, provisioning metadata, and resource utilization.</p>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button class="btn btn-primary btn-sm" id="register-host-btn">+ Register Host</button>
-          <button class="btn btn-sm" id="resources-refresh-btn">🔄 Refresh</button>
+          <button class="btn btn-primary btn-sm" id="register-host-btn">${renderIcon("plus", { size: "xs" })} Register Host</button>
+          <button class="btn btn-sm" id="resources-refresh-btn">${renderIcon("refresh-cw", { size: "sm" })} Refresh</button>
         </div>
       </div>
 
@@ -154,7 +155,7 @@ export async function renderResourcesView(container) {
   } catch (err) {
     container.innerHTML = `
       <div class="state-container">
-        <div class="state-icon text-critical">⚠️</div>
+        <div class="state-icon text-critical">${renderIcon("triangle-alert", { size: "xl" })}</div>
         <div class="state-title">Failed to load infrastructure inventory</div>
         <div class="state-desc">${escapeHtml(err.message)}</div>
         <button class="btn btn-primary" id="retry-resources-btn">Retry</button>
@@ -168,7 +169,7 @@ export async function renderResourcesView(container) {
 async function openHostDetailsModal(hostId) {
   openModal(`Host Telemetry & Details (ID: ${hostId})`, `
     <div class="state-container" style="padding: 20px;">
-      <div class="state-icon">⏳</div>
+      <div class="state-icon">${renderIcon("loader", { size: "xl", className: "icon-spin" })}</div>
       <div class="state-title">Fetching host metrics...</div>
     </div>
   `);

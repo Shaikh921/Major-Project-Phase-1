@@ -5,11 +5,12 @@
 import { api } from "../api.js";
 import { escapeHtml, formatRelativeTime, formatTimestamp } from "../sanitizer.js";
 import { renderSeverityBadge } from "../components/StatusBadge.js";
+import { renderIcon } from "../components/Icons.js";
 
 export async function renderAnomaliesView(container) {
   container.innerHTML = `
     <div class="state-container">
-      <div class="state-icon">⏳</div>
+      <div class="state-icon">${renderIcon("loader", { size: "xl", className: "icon-spin" })}</div>
       <div class="state-title">Loading Multivariate Anomaly Stream...</div>
     </div>
   `;
@@ -25,7 +26,9 @@ export async function renderAnomaliesView(container) {
           <p>Deep causal anomaly investigation powered by PyTorch LSTM Autoencoders and Isolation Forests.</p>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button class="btn btn-sm" id="anomalies-refresh-btn">🔄 Refresh</button>
+          <button class="btn btn-sm" id="anomalies-refresh-btn">
+            ${renderIcon("refresh-cw", { size: "sm" })} Refresh
+          </button>
         </div>
       </div>
 
@@ -33,7 +36,7 @@ export async function renderAnomaliesView(container) {
       <div style="display: flex; flex-direction: column; gap: 14px;">
         ${anomalyAlerts.length === 0 ? `
           <div class="panel state-container" style="padding: 40px;">
-            <div class="state-icon">✅</div>
+            <div class="state-icon">${renderIcon("circle-check", { size: "xl", className: "text-healthy" })}</div>
             <div class="state-title">No anomalous deviations detected</div>
             <p class="state-desc">All metric vectors are reconstructing within learned normal bounds.</p>
           </div>
@@ -104,8 +107,12 @@ export async function renderAnomaliesView(container) {
               <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 4px;">
                 <div style="display: flex; gap: 8px;">
                   <button class="btn btn-sm" onclick="ackAnomaly(${a.id})">Acknowledge</button>
-                  <button class="btn btn-sm" onclick="submitFeedback(${a.id}, 'true_positive')">✓ Confirm Anomaly (True Positive)</button>
-                  <button class="btn btn-sm" onclick="submitFeedback(${a.id}, 'false_positive')">✗ Mark False Alarm</button>
+                  <button class="btn btn-sm" onclick="submitFeedback(${a.id}, 'true_positive')">
+                    ${renderIcon("check", { size: "xs" })} Confirm Anomaly (True Positive)
+                  </button>
+                  <button class="btn btn-sm" onclick="submitFeedback(${a.id}, 'false_positive')">
+                    ${renderIcon("x", { size: "xs" })} Mark False Alarm
+                  </button>
                 </div>
                 <div class="text-muted" style="font-size: 11px;">
                   Status: <strong class="mono" style="color: var(--text-primary);">${escapeHtml(a.status)}</strong>
@@ -144,7 +151,7 @@ export async function renderAnomaliesView(container) {
   } catch (err) {
     container.innerHTML = `
       <div class="state-container">
-        <div class="state-icon text-critical">⚠️</div>
+        <div class="state-icon text-critical">${renderIcon("triangle-alert", { size: "xl" })}</div>
         <div class="state-title">Failed to load anomaly center</div>
         <div class="state-desc">${escapeHtml(err.message)}</div>
       </div>

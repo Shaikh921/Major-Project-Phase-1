@@ -206,6 +206,19 @@ class ApiClient {
     if (action) qs.set("action", action);
     return this.request(`/audit/logs?${qs.toString()}`);
   }
+
+  // Currency & FX
+  getSupportedCurrencies() {
+    return this.request("/currency/supported");
+  }
+
+  getCurrencyRates(quotes = null, base = "USD") {
+    const qs = new URLSearchParams({ base });
+    if (quotes && quotes.length) {
+      qs.set("quotes", quotes.join(","));
+    }
+    return this.request(`/currency/rates?${qs.toString()}`);
+  }
 }
 
 export const api = new ApiClient();

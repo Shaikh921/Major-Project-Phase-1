@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cloud Resource Monitoring & Intelligence Command Center</title>
-  <link rel="stylesheet" href="css/design-system.css">
-  <link rel="stylesheet" href="css/command-center.css">
+  <link rel="stylesheet" href="css/design-system.css?v=3.1.0">
+  <link rel="stylesheet" href="css/command-center.css?v=3.1.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,7 +15,9 @@
     <!-- Persistent Sidebar -->
     <aside id="sidebar" role="navigation" aria-label="Main Navigation">
       <div class="sidebar-brand">
-        <div class="brand-icon">⚡</div>
+        <div class="brand-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
         <div class="brand-text">
           <span>CloudOps Intel</span>
           <span class="brand-sub">SRE Command Center</span>
@@ -24,61 +26,85 @@
 
       <nav class="sidebar-nav">
         <div class="nav-section-title">Operations</div>
-        <a class="nav-item active" data-view="overview">
-          <span class="nav-icon">📊</span>
-          <span>Overview</span>
+        <a class="nav-item active" data-view="overview" title="Overview">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          </span>
+          <span class="nav-label">Overview</span>
         </a>
-        <a class="nav-item" data-view="resources">
-          <span class="nav-icon">🖥️</span>
-          <span>Infrastructure</span>
+        <a class="nav-item" data-view="resources" title="Infrastructure">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
+          </span>
+          <span class="nav-label">Infrastructure</span>
         </a>
-        <a class="nav-item" data-view="metrics">
-          <span class="nav-icon">📈</span>
-          <span>Telemetry Stream</span>
+        <a class="nav-item" data-view="metrics" title="Telemetry Stream">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </span>
+          <span class="nav-label">Telemetry Stream</span>
         </a>
 
         <div class="nav-section-title">Detection & Triage</div>
-        <a class="nav-item" data-view="anomalies">
-          <span class="nav-icon">🔍</span>
-          <span>Anomaly Center</span>
+        <a class="nav-item" data-view="anomalies" title="Anomaly Center">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="m16 16 3 3"/></svg>
+          </span>
+          <span class="nav-label">Anomaly Center</span>
         </a>
-        <a class="nav-item" data-view="incidents">
-          <span class="nav-icon">⚡</span>
-          <span>Incidents</span>
+        <a class="nav-item" data-view="incidents" title="Incidents">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </span>
+          <span class="nav-label">Incidents</span>
         </a>
-        <a class="nav-item" data-view="security">
-          <span class="nav-icon">🛡️</span>
-          <span>Security & Threat</span>
+        <a class="nav-item" data-view="security" title="Security & Threat">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </span>
+          <span class="nav-label">Security & Threat</span>
         </a>
 
         <div class="nav-section-title">Intelligence & Analysis</div>
-        <a class="nav-item" data-view="cost">
-          <span class="nav-icon">💰</span>
-          <span>Cost Optimization</span>
+        <a class="nav-item" data-view="cost" title="Cost Optimization">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+          </span>
+          <span class="nav-label">Cost Optimization</span>
         </a>
-        <a class="nav-item" data-view="narrator">
-          <span class="nav-icon">🤖</span>
-          <span>AI Incident Narrator</span>
+        <a class="nav-item" data-view="narrator" title="AI Incident Narrator">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><rect width="18" height="12" x="3" y="6" rx="2"/><path d="M9 11h.01"/><path d="M15 11h.01"/><path d="M12 2v4"/><path d="M2 12h1"/><path d="M21 12h1"/></svg>
+          </span>
+          <span class="nav-label">AI Incident Narrator</span>
         </a>
-        <a class="nav-item" data-view="reports">
-          <span class="nav-icon">📄</span>
-          <span>Reports & Export</span>
+        <a class="nav-item" data-view="reports" title="Reports & Export">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+          </span>
+          <span class="nav-label">Reports & Export</span>
         </a>
 
         <div class="nav-section-title">Administration</div>
-        <a class="nav-item" data-view="audit">
-          <span class="nav-icon">📜</span>
-          <span>Audit Trail</span>
+        <a class="nav-item" data-view="audit" title="Audit Trail">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+          </span>
+          <span class="nav-label">Audit Trail</span>
         </a>
-        <a class="nav-item" data-view="settings">
-          <span class="nav-icon">⚙️</span>
-          <span>Threshold Rules</span>
+        <a class="nav-item" data-view="settings" title="Threshold Rules">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/></svg>
+          </span>
+          <span class="nav-label">Threshold Rules</span>
         </a>
       </nav>
 
       <div class="sidebar-footer">
         <span class="mono">v3.0.0-PROD</span>
-        <button class="btn btn-sm btn-icon" id="sidebar-collapse-btn" title="Toggle Sidebar">⇄</button>
+        <button class="btn btn-sm btn-icon" id="sidebar-collapse-btn" title="Toggle Sidebar" aria-label="Toggle Sidebar">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-sm"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+        </button>
       </div>
     </aside>
 
@@ -102,9 +128,24 @@
             <option value="7d">Time: Last 7 days</option>
           </select>
 
+          <select id="global-currency-select" class="select-control" aria-label="Display Currency Selection">
+            <option value="USD">Currency: USD ($)</option>
+            <option value="INR">Currency: INR (₹)</option>
+            <option value="EUR">Currency: EUR (€)</option>
+            <option value="GBP">Currency: GBP (£)</option>
+            <option value="JPY">Currency: JPY (¥)</option>
+            <option value="CAD">Currency: CAD (CA$)</option>
+            <option value="AUD">Currency: AUD (A$)</option>
+            <option value="SGD">Currency: SGD (S$)</option>
+            <option value="AED">Currency: AED (AED)</option>
+            <option value="CHF">Currency: CHF (CHF)</option>
+          </select>
+
           <div class="search-container" id="global-search-trigger" role="search">
-            <span class="search-icon-left">🔍</span>
-            <input type="text" class="search-input" placeholder="Search resources, alerts..." readonly>
+            <span class="search-icon-left" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-sm"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </span>
+            <input type="text" class="search-input" placeholder="Search resources, alerts..." readonly aria-label="Search resources, alerts">
             <span class="search-shortcut-badge">Ctrl+K</span>
           </div>
         </div>
@@ -115,8 +156,8 @@
             <span>SYSTEM OPERATIONAL</span>
           </div>
 
-          <button class="btn btn-sm" id="notif-drawer-toggle" aria-label="Open notifications" style="position: relative;">
-            🔔
+          <button class="btn btn-sm btn-icon" id="notif-drawer-toggle" aria-label="Open notifications" style="position: relative;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-sm"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
             <span id="notif-badge" class="nav-badge" style="display: none; position: absolute; top: -4px; right: -4px;">0</span>
           </button>
 
@@ -138,6 +179,6 @@
     </aside>
   </div>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=3.3.0"></script>
 </body>
 </html>

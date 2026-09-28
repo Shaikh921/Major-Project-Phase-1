@@ -4,11 +4,12 @@
 
 import { api } from "../api.js";
 import { escapeHtml, formatRelativeTime, formatTimestamp } from "../sanitizer.js";
+import { renderIcon } from "../components/Icons.js";
 
 export async function renderMetricsView(container) {
   container.innerHTML = `
     <div class="state-container">
-      <div class="state-icon">⏳</div>
+      <div class="state-icon">${renderIcon("loader", { size: "xl", className: "icon-spin" })}</div>
       <div class="state-title">Loading Time-Series Telemetry...</div>
     </div>
   `;
@@ -18,7 +19,7 @@ export async function renderMetricsView(container) {
     if (hosts.length === 0) {
       container.innerHTML = `
         <div class="state-container">
-          <div class="state-icon">🖥️</div>
+          <div class="state-icon">${renderIcon("server", { size: "xl" })}</div>
           <div class="state-title">No active hosts available</div>
           <p class="state-desc">Register a host in Infrastructure to begin streaming telemetry.</p>
         </div>
@@ -49,7 +50,7 @@ export async function renderMetricsView(container) {
       <!-- Metric Charts Container -->
       <div class="panel" style="display: flex; flex-direction: column; gap: 16px;">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
-          <span class="panel-title" id="active-host-chart-title">📈 Telemetry Stream: ${escapeHtml(defaultHost.hostname)}</span>
+          <span class="panel-title" id="active-host-chart-title">${renderIcon("activity", { size: "sm" })} Telemetry Stream: ${escapeHtml(defaultHost.hostname)}</span>
           <div style="display: flex; gap: 14px; font-size: 11px;">
             <span style="color: #3b82f6;">● CPU %</span>
             <span style="color: #10b981;">● Memory %</span>
@@ -77,7 +78,7 @@ export async function renderMetricsView(container) {
       
       const selectedHostObj = hosts.find(h => String(h.id) === String(hostId)) || defaultHost;
       const titleEl = document.getElementById("active-host-chart-title");
-      if (titleEl) titleEl.textContent = `📈 Telemetry Stream: ${selectedHostObj.hostname}`;
+      if (titleEl) titleEl.innerHTML = `${renderIcon("activity", { size: "sm" })} Telemetry Stream: ${escapeHtml(selectedHostObj.hostname)}`;
 
       try {
         const data = await api.getHostMetrics(hostId, limit);
@@ -96,7 +97,7 @@ export async function renderMetricsView(container) {
   } catch (err) {
     container.innerHTML = `
       <div class="state-container">
-        <div class="state-icon text-critical">⚠️</div>
+        <div class="state-icon text-critical">${renderIcon("triangle-alert", { size: "xl" })}</div>
         <div class="state-title">Failed to load metrics view</div>
         <div class="state-desc">${escapeHtml(err.message)}</div>
       </div>
@@ -199,16 +200,16 @@ function renderChartSummary(series) {
       <div class="mono" style="font-size: 16px; font-weight: 700; color: #3b82f6;">${latest.cpu_percent.toFixed(1)}%</div>
     </div>
     <div class="panel" style="padding: 8px;">
-      <div class="text-muted" style="font-size: 10.5px;">PEAK OBSERVED CPU</div>
-      <div class="mono" style="font-size: 16px; font-weight: 700;">${peakCpu.toFixed(1)}%</div>
+      <div class="text-muted" style="font-size: 10.5px;">AVERAGE CPU</div>
+      <div class="mono" style="font-size: 16px; font-weight: 700;">${avgCpu.toFixed(1)}%</div>
     </div>
     <div class="panel" style="padding: 8px;">
-      <div class="text-muted" style="font-size: 10.5px;">CURRENT MEMORY</div>
-      <div class="mono" style="font-size: 16px; font-weight: 700; color: #10b981;">${latest.memory_percent.toFixed(1)}%</div>
+      <div class="text-muted" style="font-size: 10.5px;">PEAK CPU</div>
+      <div class="mono text-warning" style="font-size: 16px; font-weight: 700;">${peakCpu.toFixed(1)}%</div>
     </div>
     <div class="panel" style="padding: 8px;">
-      <div class="text-muted" style="font-size: 10.5px;">CURRENT DISK</div>
-      <div class="mono" style="font-size: 16px; font-weight: 700; color: #f59e0b;">${latest.disk_percent.toFixed(1)}%</div>
+      <div class="text-muted" style="font-size: 10.5px;">BUFFER SAMPLES</div>
+      <div class="mono text-healthy" style="font-size: 16px; font-weight: 700;">${series.length}</div>
     </div>
   `;
 }

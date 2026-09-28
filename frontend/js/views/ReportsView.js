@@ -2,8 +2,10 @@
  * Reports View - Executive & Operational Summary Generator.
  */
 
-import { api } from "../api.js";
-import { escapeHtml, formatTimestamp } from "../sanitizer.js";
+import { api } from "../api.js?v=3.3.0";
+import { currencyManager } from "../currency.js?v=3.3.0";
+import { escapeHtml, formatTimestamp } from "../sanitizer.js?v=3.3.0";
+import { renderIcon } from "../components/Icons.js?v=3.3.0";
 
 export async function renderReportsView(container) {
   container.innerHTML = `
@@ -13,14 +15,16 @@ export async function renderReportsView(container) {
         <p>Generate on-demand cross-module incident and resource efficiency summaries.</p>
       </div>
       <div>
-        <button class="btn btn-primary btn-sm" id="gen-report-btn">📄 Generate 24h Report</button>
+        <button class="btn btn-primary btn-sm" id="gen-report-btn">
+          ${renderIcon("file-text", { size: "xs" })} Generate 24h Report
+        </button>
       </div>
     </div>
 
     <!-- Report View Container -->
     <div id="report-output-container" class="panel" style="display: flex; flex-direction: column; gap: 16px;">
       <div class="state-container" style="padding: 30px;">
-        <div class="state-icon">📄</div>
+        <div class="state-icon">${renderIcon("file-text", { size: "xl" })}</div>
         <div class="state-title">Ready to Generate Operational Report</div>
         <p class="state-desc">Click 'Generate 24h Report' above to synthesize active fleet telemetry, incidents, security audit, and cost analytics.</p>
       </div>
@@ -33,13 +37,14 @@ export async function renderReportsView(container) {
   const runReport = async () => {
     outputContainer.innerHTML = `
       <div class="state-container" style="padding: 30px;">
-        <div class="state-icon">⏳</div>
+        <div class="state-icon">${renderIcon("loader", { size: "xl", className: "icon-spin" })}</div>
         <div class="state-title">Synthesizing multi-domain telemetry...</div>
       </div>
     `;
 
     try {
       const rep = await api.generateReport(24);
+      const rateMeta = currencyManager.getRateMetadata();
 
       outputContainer.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
@@ -47,9 +52,12 @@ export async function renderReportsView(container) {
             <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">${escapeHtml(rep.title)}</h2>
             <div class="mono text-muted" style="font-size: 11px;">
               Report ID: ${escapeHtml(rep.report_id)} | Generated: ${formatTimestamp(rep.generated_at)}
+              ${rateMeta.isConverted ? ` | Currency: ${escapeHtml(rateMeta.displayCurrency)} (@ ${escapeHtml(rateMeta.rateFormatted)})` : ''}
             </div>
           </div>
-          <button class="btn btn-sm" onclick="window.print()">🖨️ Export PDF / Print</button>
+          <button class="btn btn-sm" onclick="window.print()">
+            ${renderIcon("printer", { size: "xs" })} Export PDF / Print
+          </button>
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: var(--bg-surface-elevated); padding: 12px; border-radius: var(--radius-sm);">
@@ -66,8 +74,8 @@ export async function renderReportsView(container) {
             <div class="mono text-warning" style="font-size: 18px; font-weight: 700;">${rep.security_events_count}</div>
           </div>
           <div>
-            <div class="text-muted" style="font-size: 10.5px;">ESTIMATED SAVINGS</div>
-            <div class="mono text-healthy" style="font-size: 18px; font-weight: 700;">+$${rep.potential_savings_usd.toFixed(2)}/mo</div>
+            <div class="text-muted" style="font-size: 10.5px;">ESTIMATED SAVINGS (${escapeHtml(currencyManager.displayCurrency)})</div>
+            <div class="mono text-healthy" style="font-size: 18px; font-weight: 700;">+${currencyManager.format(rep.potential_savings_usd)}/mo</div>
           </div>
         </div>
 

@@ -4,6 +4,7 @@
 
 import { escapeHtml, formatRelativeTime } from "../sanitizer.js";
 import { store } from "../config.js";
+import { renderIcon } from "./Icons.js";
 
 export function renderNotificationDrawer(notifications = []) {
   const drawer = document.getElementById("notification-drawer");
@@ -13,10 +14,10 @@ export function renderNotificationDrawer(notifications = []) {
     drawer.innerHTML = `
       <div class="panel-header" style="padding: 14px; margin: 0;">
         <span class="panel-title">Notifications</span>
-        <button class="btn btn-sm btn-icon" id="close-notif-btn">✕</button>
+        <button class="btn btn-sm btn-icon" id="close-notif-btn" aria-label="Close notifications">${renderIcon("x", { size: "sm" })}</button>
       </div>
       <div class="state-container">
-        <span class="state-icon">🔔</span>
+        <span class="state-icon">${renderIcon("bell", { size: "xl" })}</span>
         <span class="state-title">No notifications</span>
         <p class="state-desc">All monitored systems are operating normally.</p>
       </div>
@@ -25,7 +26,7 @@ export function renderNotificationDrawer(notifications = []) {
     drawer.innerHTML = `
       <div class="panel-header" style="padding: 14px; margin: 0;">
         <span class="panel-title">Notifications (${notifications.length})</span>
-        <button class="btn btn-sm btn-icon" id="close-notif-btn">✕</button>
+        <button class="btn btn-sm btn-icon" id="close-notif-btn" aria-label="Close notifications">${renderIcon("x", { size: "sm" })}</button>
       </div>
       <div style="flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
         ${notifications.map(n => `

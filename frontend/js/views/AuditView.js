@@ -4,11 +4,12 @@
 
 import { api } from "../api.js";
 import { escapeHtml, formatRelativeTime, formatTimestamp } from "../sanitizer.js";
+import { renderIcon } from "../components/Icons.js";
 
 export async function renderAuditView(container) {
   container.innerHTML = `
     <div class="state-container">
-      <div class="state-icon">⏳</div>
+      <div class="state-icon">${renderIcon("loader", { size: "xl", className: "icon-spin" })}</div>
       <div class="state-title">Loading Administrative Audit Trail...</div>
     </div>
   `;
@@ -23,14 +24,16 @@ export async function renderAuditView(container) {
           <p>Tamper-evident chronological audit records tracking operator actions, configuration changes, and incident triage.</p>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button class="btn btn-sm" id="audit-refresh-btn">🔄 Refresh</button>
+          <button class="btn btn-sm" id="audit-refresh-btn">
+            ${renderIcon("refresh-cw", { size: "sm" })} Refresh
+          </button>
         </div>
       </div>
 
       <!-- Audit Log Table -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">📜 System Audit Records (${logs.length})</span>
+          <span class="panel-title">${renderIcon("clipboard-list", { size: "sm" })} System Audit Records (${logs.length})</span>
           <span class="text-muted mono" style="font-size: 11px;">Append-Only Database Journal</span>
         </div>
 
@@ -71,7 +74,7 @@ export async function renderAuditView(container) {
   } catch (err) {
     container.innerHTML = `
       <div class="state-container">
-        <div class="state-icon text-critical">⚠️</div>
+        <div class="state-icon text-critical">${renderIcon("triangle-alert", { size: "xl" })}</div>
         <div class="state-title">Failed to load audit logs</div>
         <div class="state-desc">${escapeHtml(err.message)}</div>
       </div>

@@ -48,6 +48,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def add_no_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/js") or path.startswith("/css") or path == "/" or path.endswith(".html") or path.endswith(".js"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
 # Mount API Routers
 app.include_router(api_router)
 
@@ -65,7 +77,9 @@ def root(request: Request):
     accept = request.headers.get("accept", "")
     index_path = os.path.join(FRONTEND_DIR, "index.html")
     if "text/html" in accept and os.path.exists(index_path):
-        return FileResponse(index_path)
+        resp = FileResponse(index_path)
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        return resp
     return {
         "application": settings.app_name,
         "version": settings.app_version,

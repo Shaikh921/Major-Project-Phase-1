@@ -2,24 +2,25 @@
  * Main Application Orchestrator & View Router.
  */
 
-import { store, ENVIRONMENTS, TIME_RANGES } from "./config.js";
-import { api } from "./api.js";
-import { escapeHtml } from "./sanitizer.js";
-import { openCommandPalette } from "./components/CommandPalette.js";
-import { renderNotificationDrawer } from "./components/NotificationCenter.js";
+import { store, ENVIRONMENTS, TIME_RANGES } from "./config.js?v=3.3.0";
+import { api } from "./api.js?v=3.3.0";
+import { currencyManager } from "./currency.js?v=3.3.0";
+import { escapeHtml } from "./sanitizer.js?v=3.3.0";
+import { openCommandPalette } from "./components/CommandPalette.js?v=3.3.0";
+import { renderNotificationDrawer } from "./components/NotificationCenter.js?v=3.3.0";
 
 // View Imports
-import { renderOverviewView } from "./views/OverviewView.js";
-import { renderResourcesView } from "./views/ResourcesView.js";
-import { renderMetricsView } from "./views/MetricsView.js";
-import { renderAnomaliesView } from "./views/AnomaliesView.js";
-import { renderIncidentsView } from "./views/IncidentsView.js";
-import { renderSecurityView } from "./views/SecurityView.js";
-import { renderCostView } from "./views/CostView.js";
-import { renderNarratorView } from "./views/NarratorView.js";
-import { renderReportsView } from "./views/ReportsView.js";
-import { renderAuditView } from "./views/AuditView.js";
-import { renderSettingsView } from "./views/SettingsView.js";
+import { renderOverviewView } from "./views/OverviewView.js?v=3.3.0";
+import { renderResourcesView } from "./views/ResourcesView.js?v=3.3.0";
+import { renderMetricsView } from "./views/MetricsView.js?v=3.3.0";
+import { renderAnomaliesView } from "./views/AnomaliesView.js?v=3.3.0";
+import { renderIncidentsView } from "./views/IncidentsView.js?v=3.3.0";
+import { renderSecurityView } from "./views/SecurityView.js?v=3.3.0";
+import { renderCostView } from "./views/CostView.js?v=3.3.0";
+import { renderNarratorView } from "./views/NarratorView.js?v=3.3.0";
+import { renderReportsView } from "./views/ReportsView.js?v=3.3.0";
+import { renderAuditView } from "./views/AuditView.js?v=3.3.0";
+import { renderSettingsView } from "./views/SettingsView.js?v=3.3.0";
 
 const VIEW_MAP = {
   overview: renderOverviewView,
@@ -44,6 +45,11 @@ export function initApp() {
 
   // Subscribe to state changes
   store.subscribe(onStateChange);
+
+  // Subscribe to currency changes to refresh active view (e.g. Cost, Reports)
+  currencyManager.subscribe(() => {
+    navigateTo(store.currentView);
+  });
 
   // Initial Route Render
   navigateTo(store.currentView);
@@ -100,6 +106,14 @@ function bindHeaderControls() {
   if (timeSelect) {
     timeSelect.onchange = (e) => {
       store.setState({ currentTimeRange: e.target.value });
+    };
+  }
+
+  const currencySelect = document.getElementById("global-currency-select");
+  if (currencySelect) {
+    currencySelect.value = currencyManager.displayCurrency;
+    currencySelect.onchange = async (e) => {
+      await currencyManager.setDisplayCurrency(e.target.value);
     };
   }
 
