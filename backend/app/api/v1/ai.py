@@ -9,7 +9,8 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from backend.app.api.deps import get_db
+from backend.app.api.deps import get_db, get_current_viewer, get_current_admin
+from backend.app.models.user import User
 from backend.app.schemas.ai import (
     AnomalyScoreRequest,
     AnomalyScoreResponse,
@@ -29,6 +30,7 @@ router = APIRouter(prefix="/ai", tags=["AI & Machine Learning"])
 @router.post("/score", response_model=AnomalyScoreResponse)
 def score_sample(
     payload: AnomalyScoreRequest,
+    current_user: User = Depends(get_current_viewer),
 ):
     """
     Evaluates a single multi-metric telemetry sample in near-real-time (M2-FR2).
@@ -40,11 +42,12 @@ def score_sample(
 @router.post("/train", response_model=ModelTrainResponse, status_code=status.HTTP_201_CREATED)
 def trigger_model_training(
     payload: ModelTrainRequest,
+    current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
     """
     Trains or retrains an Isolation Forest anomaly detector using historical telemetry (M2-FR1/M2-FR5).
-    Saves the checkpoint to the model registry.
+    Requires ADMIN role.
     """
     try:
         return train_anomaly_model(db, payload)
@@ -56,7 +59,9 @@ def trigger_model_training(
 
 
 @router.get("/models", response_model=List[ModelMetadataResponse])
-def get_registered_models():
+def get_registered_models(
+    current_user: User = Depends(get_current_viewer),
+):
     """
     Lists all saved model checkpoints and training parameters (M2-FR6).
     """

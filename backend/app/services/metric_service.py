@@ -34,6 +34,7 @@ def ingest_metric(db: Session, metric_in: MetricCreate) -> Tuple[Metric, List[Al
         environment=metric_in.environment,
         provider=metric_in.provider,
         region=metric_in.region,
+        source_type=metric_in.source_type or "UNKNOWN",
     )
 
     sample_ts = metric_in.timestamp or datetime.now(timezone.utc)
@@ -238,6 +239,7 @@ def get_fleet_summary(db: Session) -> FleetSummaryResponse:
                 environment=host.environment,
                 provider=host.provider,
                 region=host.region,
+                source_type=getattr(host, "source_type", "UNKNOWN") or "UNKNOWN",
                 is_active=host.is_active,
                 status=status,
                 last_seen=latest_metric.timestamp if latest_metric else host.updated_at,

@@ -22,6 +22,7 @@ def create_host(
     instance_type: Optional[str] = None,
     provider: Optional[str] = "bare-metal",
     region: Optional[str] = "local",
+    source_type: str = "UNKNOWN",
     tags: Optional[Dict[str, Any]] = None,
 ) -> Host:
     """
@@ -34,6 +35,7 @@ def create_host(
         instance_type=instance_type,
         provider=provider,
         region=region,
+        source_type=source_type,
         tags=tags or {},
         is_active=True,
     )
@@ -50,10 +52,11 @@ def get_or_create_host(
     environment: Optional[str] = "local",
     provider: Optional[str] = "bare-metal",
     region: Optional[str] = "local",
+    source_type: Optional[str] = "UNKNOWN",
 ) -> Host:
     """
     Retrieves an existing host by hostname or automatically provisions a new record (M1-FR2).
-    Updates IP address and last seen metadata if changed.
+    Updates IP address, source_type, and last seen metadata if changed.
     """
     statement = select(Host).where(Host.hostname == hostname)
     host = db.scalar(statement)
@@ -65,6 +68,7 @@ def get_or_create_host(
             environment=environment or "local",
             provider=provider or "bare-metal",
             region=region or "local",
+            source_type=source_type or "UNKNOWN",
             is_active=True,
             tags={},
         )
@@ -72,10 +76,13 @@ def get_or_create_host(
         db.commit()
         db.refresh(host)
     else:
-        # Update IP and activity if it was offline or changed
+        # Update IP, source_type, and activity if it was offline or changed
         changed = False
         if ip_address and host.ip_address != ip_address:
             host.ip_address = ip_address
+            changed = True
+        if source_type and source_type != "UNKNOWN" and host.source_type != source_type:
+            host.source_type = source_type
             changed = True
         if not host.is_active:
             host.is_active = True

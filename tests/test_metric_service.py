@@ -155,3 +155,42 @@ def test_get_fleet_summary():
     assert summary.total_active_alerts >= 1
 
     db.close()
+
+
+def test_metric_ingestion_preserves_source_type():
+    """Tests that ingesting telemetry with source_type propagates through to fleet summary."""
+    db = create_test_db()
+
+    # Ingest from Real Agent
+    ingest_metric(
+        db,
+        MetricCreate(
+            hostname="local-agent-node",
+            source_type="REAL_AGENT",
+            cpu_percent=15.0,
+            memory_percent=45.0,
+            disk_percent=50.0,
+        ),
+    )
+
+    # Ingest from Simulated Fleet
+    ingest_metric(
+        db,
+        MetricCreate(
+            hostname="simulated-fleet-node",
+            source_type="SIMULATED",
+            provider="simulation",
+            region="synthetic",
+            cpu_percent=85.0,
+            memory_percent=70.0,
+            disk_percent=60.0,
+        ),
+    )
+
+    summary = get_fleet_summary(db)
+    assert summary.total_hosts == 2
+    sources = {h.hostname: h.source_type for h in summary.hosts}
+    assert sources["local-agent-node"] == "REAL_AGENT"
+    assert sources["simulated-fleet-node"] == "SIMULATED"
+
+    db.close()

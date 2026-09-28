@@ -15,9 +15,13 @@ from backend.app.api.v1.narrator import router as narrator_router
 from backend.app.api.v1.reports import router as reports_router
 from backend.app.api.v1.audit import router as audit_router
 from backend.app.api.v1.currency import router as currency_router
+from backend.app.api.v1.auth import router as auth_router
+from backend.app.api.v1.admin import router as admin_router
 
 api_router = APIRouter(prefix="/api/v1")
 
+api_router.include_router(auth_router)
+api_router.include_router(admin_router)
 api_router.include_router(hosts_router)
 api_router.include_router(metrics_router)
 api_router.include_router(alerts_router)

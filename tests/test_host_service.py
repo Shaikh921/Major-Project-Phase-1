@@ -126,3 +126,36 @@ def test_update_and_deactivate_host():
     assert deactivated.is_active is False
 
     db.close()
+
+
+def test_host_source_type_classification():
+    """Tests that host creation and auto-discovery correctly store and update source_type."""
+    db = create_test_database()
+
+    # 1. Real Agent Host
+    real_host = create_host(
+        db=db,
+        hostname="real-workstation",
+        source_type="REAL_AGENT",
+        provider="bare-metal",
+        region="local",
+    )
+    assert real_host.source_type == "REAL_AGENT"
+
+    # 2. Simulated Host Auto-Discovery
+    sim_host = get_or_create_host(
+        db=db,
+        hostname="sim-node-01",
+        source_type="SIMULATED",
+        provider="simulation",
+        region="synthetic",
+    )
+    assert sim_host.source_type == "SIMULATED"
+    assert sim_host.provider == "simulation"
+
+    # 3. Retrieval verifies persistence
+    fetched_sim = get_host(db, sim_host.id)
+    assert fetched_sim is not None
+    assert fetched_sim.source_type == "SIMULATED"
+
+    db.close()

@@ -49,3 +49,31 @@ export function renderSeverityBadge(severity) {
     </span>
   `;
 }
+
+export function renderSourceBadge(sourceType) {
+  const src = String(sourceType || "UNKNOWN").toUpperCase();
+  let label = "UNKNOWN";
+  let cls = "badge-info";
+  let dotCls = "info";
+
+  if (src === "REAL_AGENT") {
+    label = "REAL AGENT";
+    cls = "badge-healthy";
+    dotCls = "healthy";
+  } else if (src === "SIMULATED") {
+    label = "SIMULATED";
+    cls = "badge-info";
+    dotCls = "info";
+  } else if (src === "CLOUD_PROVIDER") {
+    label = "CLOUD API";
+    cls = "badge-warning";
+    dotCls = "warning";
+  }
+
+  return `
+    <span class="badge ${cls}" role="status" aria-label="Source: ${escapeHtml(label)}" style="letter-spacing: 0.5px; font-weight: 600;">
+      <span class="status-dot ${dotCls}" aria-hidden="true"></span>
+      <span>${escapeHtml(label)}</span>
+    </span>
+  `;
+}

@@ -52,16 +52,10 @@ class SystemCollector:
             Dictionary containing metric values formatted for MetricCreate schema.
         """
         if not PSUTIL_AVAILABLE:
-            # Graceful fallback if psutil is unavailable in minimal test environments
-            return {
-                "hostname": self.get_hostname(),
-                "ip_address": self.get_ip_address(),
-                "cpu_percent": 25.0,
-                "memory_percent": 50.0,
-                "disk_percent": 60.0,
-                "network_sent_mb": 0.5,
-                "network_received_mb": 1.2,
-            }
+            raise RuntimeError(
+                "psutil package is required for real hardware telemetry collection. "
+                "Install psutil to collect live CPU, memory, disk, and network metrics."
+            )
 
         # CPU Utilization %
         cpu = psutil.cpu_percent(interval=None)

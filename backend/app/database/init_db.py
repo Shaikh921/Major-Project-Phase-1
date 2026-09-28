@@ -19,6 +19,9 @@ from backend.app.models.metric import Metric
 from backend.app.models.alert import AlertRule, Alert, AlertFeedback
 from backend.app.models.security import SecurityEvent, AuditLog
 from backend.app.models.cost import PricingCatalog, CostRecommendation
+from backend.app.models.user import User, UserSession, EmailVerificationToken, PasswordResetToken, UserRole
+from backend.app.core.config import settings
+from backend.app.services.auth_service import create_bootstrap_admin
 from cost_engine.calculator import STANDARD_PRICING_CATALOG
 
 
@@ -117,11 +120,11 @@ def seed_baseline_telemetry_if_empty(db: Session) -> None:
     if existing_host is None:
         now = datetime.now(timezone.utc)
         sample_hosts = [
-            ("prod-api-01", "10.0.1.12", "production", "c5.2xlarge", "AWS", "us-east-1"),
-            ("prod-api-02", "10.0.1.13", "production", "c5.2xlarge", "AWS", "us-east-1"),
-            ("prod-db-primary", "10.0.2.5", "production", "r5.xlarge", "AWS", "us-east-1"),
-            ("staging-worker-01", "10.0.3.18", "staging", "t3.xlarge", "AWS", "us-west-2"),
-            ("dev-sandbox-01", "10.0.4.99", "development", "t3.medium", "AWS", "us-west-2"),
+            ("prod-api-01", "10.0.1.12", "production", "c5.2xlarge", "simulation", "synthetic"),
+            ("prod-api-02", "10.0.1.13", "production", "c5.2xlarge", "simulation", "synthetic"),
+            ("prod-db-primary", "10.0.2.5", "production", "r5.xlarge", "simulation", "synthetic"),
+            ("staging-worker-01", "10.0.3.18", "staging", "t3.xlarge", "simulation", "synthetic"),
+            ("dev-sandbox-01", "10.0.4.99", "development", "t3.medium", "simulation", "synthetic"),
         ]
         
         host_objs = []
@@ -133,6 +136,7 @@ def seed_baseline_telemetry_if_empty(db: Session) -> None:
                 instance_type=itype,
                 provider=prov,
                 region=reg,
+                source_type="SIMULATED",
                 status="healthy",
                 is_active=True,
                 created_at=now - timedelta(days=7),
@@ -186,11 +190,46 @@ def seed_baseline_telemetry_if_empty(db: Session) -> None:
         db.commit()
 
 
+def migrate_schema_if_needed() -> None:
+    """
+    Safely checks and adds missing columns (such as source_type) to existing SQLite tables
+    without destructive drops or data loss.
+    """
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        try:
+            # Check existing columns on hosts table
+            result = conn.execute(text("PRAGMA table_info(hosts)"))
+            columns = [row[1] for row in result.fetchall()]
+            if columns and "source_type" not in columns:
+                conn.execute(text("ALTER TABLE hosts ADD COLUMN source_type VARCHAR(50) DEFAULT 'UNKNOWN'"))
+                conn.commit()
+
+            # Classify known existing hosts if any are UNKNOWN
+            conn.execute(text("UPDATE hosts SET source_type = 'REAL_AGENT' WHERE (hostname LIKE 'DESKTOP%' OR environment = 'local') AND (source_type IS NULL OR source_type = 'UNKNOWN')"))
+            conn.execute(text("UPDATE hosts SET source_type = 'SIMULATED', provider = 'simulation', region = 'synthetic' WHERE (hostname LIKE 'prod-%' OR hostname LIKE 'staging-%' OR hostname LIKE 'dev-%') AND (source_type IS NULL OR source_type = 'UNKNOWN')"))
+            conn.commit()
+        except Exception as e:
+            # Table might not exist yet before create_all
+            pass
+
+
 def init_db() -> None:
-    """Initializes database schema and populates initial configuration seeds."""
+    """Initializes database schema, applies safe schema additions, and populates baseline configuration."""
     Base.metadata.create_all(bind=engine)
+    migrate_schema_if_needed()
     
     with SessionLocal() as db:
         seed_default_rules(db)
         seed_pricing_catalog(db)
         seed_baseline_telemetry_if_empty(db)
+
+        # Optional environment-based admin bootstrap if configured and zero super admins exist
+        if settings.bootstrap_admin_email and settings.bootstrap_admin_password:
+            existing_super = db.scalar(select(User).where(User.role == UserRole.SUPER_ADMIN).limit(1))
+            if existing_super is None:
+                create_bootstrap_admin(
+                    db=db,
+                    email=settings.bootstrap_admin_email,
+                    password=settings.bootstrap_admin_password,
+                )

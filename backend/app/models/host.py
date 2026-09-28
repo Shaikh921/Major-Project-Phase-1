@@ -44,6 +44,12 @@ class Host(Base):
     instance_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     provider: Mapped[Optional[str]] = mapped_column(String(50), default="bare-metal", nullable=True)
     region: Mapped[Optional[str]] = mapped_column(String(50), default="local", nullable=True)
+    source_type: Mapped[str] = mapped_column(
+        String(50),
+        default="UNKNOWN",
+        nullable=False,
+        index=True,
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,

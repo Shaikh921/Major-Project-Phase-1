@@ -8,7 +8,8 @@ and Time-to-Threshold countdown timelines (Section 7: /api/forecast & M2-FR3/M5-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from backend.app.api.deps import get_db
+from backend.app.api.deps import get_db, get_current_viewer
+from backend.app.models.user import User
 from backend.app.schemas.ai import ForecastResponse
 from backend.app.services.ai_service import generate_metric_forecast
 
@@ -21,6 +22,7 @@ def get_metric_forecast(
     metric: str = Query(default="cpu_percent", description="Target metric (cpu_percent, memory_percent, disk_percent, network_sent_mb, network_received_mb)"),
     horizon_hours: int = Query(default=24, ge=1, le=168, description="Forecast horizon in hours (1h - 7d)"),
     critical_threshold: float = Query(default=95.0, ge=1.0, le=100.0, description="Critical failure threshold boundary to evaluate for countdown"),
+    current_user: User = Depends(get_current_viewer),
     db: Session = Depends(get_db),
 ):
     """

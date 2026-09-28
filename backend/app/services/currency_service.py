@@ -40,12 +40,26 @@ SUPPORTED_CURRENCIES: List[CurrencyMetadata] = [
 SUPPORTED_CODES = {c.code for c in SUPPORTED_CURRENCIES}
 
 
+DEFAULT_FALLBACK_RATES: Dict[str, float] = {
+    "USD": 1.0,
+    "INR": 86.5,
+    "EUR": 0.92,
+    "GBP": 0.78,
+    "JPY": 152.0,
+    "CAD": 1.38,
+    "AUD": 1.54,
+    "SGD": 1.34,
+    "AED": 3.67,
+    "CHF": 0.89,
+}
+
+
 class CurrencyRateCache:
     """Thread-safe in-memory cache for exchange rates."""
 
     def __init__(self, ttl_seconds: int = DEFAULT_CACHE_TTL_SECONDS):
         self._lock = threading.Lock()
-        self._rates: Dict[str, float] = {"USD": 1.0}
+        self._rates: Dict[str, float] = dict(DEFAULT_FALLBACK_RATES)
         self._rate_date: str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         self._fetched_at: Optional[datetime] = None
         self._ttl = timedelta(seconds=ttl_seconds)

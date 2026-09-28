@@ -4,7 +4,7 @@
 
 import { api } from "../api.js";
 import { escapeHtml, formatRelativeTime, formatTimestamp } from "../sanitizer.js";
-import { renderStatusBadge, renderSeverityBadge } from "../components/StatusBadge.js";
+import { renderStatusBadge, renderSeverityBadge, renderSourceBadge } from "../components/StatusBadge.js";
 import { renderSparkbar } from "../components/Sparkbar.js";
 import { store } from "../config.js";
 import { renderIcon } from "../components/Icons.js";
@@ -26,6 +26,8 @@ export async function renderOverviewView(container) {
 
     const activeAlerts = alerts.filter(a => a.status === "active");
     const isDegraded = summary.hosts_with_critical_alerts > 0 || secSummary.critical_events > 0;
+    const realCount = (summary.hosts || []).filter(h => h.source_type === "REAL_AGENT").length;
+    const simCount = (summary.hosts || []).filter(h => h.source_type === "SIMULATED").length;
 
     container.innerHTML = `
       <div class="view-header">
@@ -49,7 +51,7 @@ export async function renderOverviewView(container) {
           </div>
           <div class="summary-card-value">${isDegraded ? "DEGRADED" : "OPERATIONAL"}</div>
           <div class="summary-card-sub">
-            <span>${summary.total_hosts} monitored nodes</span>
+            <span>${realCount} real agent · ${simCount} simulated nodes</span>
           </div>
         </div>
 
@@ -95,7 +97,7 @@ export async function renderOverviewView(container) {
         <div class="panel">
           <div class="panel-header">
             <span class="panel-title">${renderIcon("server", { size: "sm" })} Fleet Nodes Health Snapshot</span>
-            <span class="text-muted" style="font-size: 11px;">Showing ${summary.hosts.length} hosts</span>
+            <span class="text-muted" style="font-size: 11px;">Showing ${summary.hosts.length} nodes</span>
           </div>
           
           <div class="table-container">
@@ -103,6 +105,7 @@ export async function renderOverviewView(container) {
               <thead>
                 <tr>
                   <th>Status</th>
+                  <th>Source</th>
                   <th>Hostname</th>
                   <th>Env</th>
                   <th>CPU Usage</th>
@@ -113,12 +116,13 @@ export async function renderOverviewView(container) {
               </thead>
               <tbody>
                 ${summary.hosts.length === 0 ? `
-                  <tr><td colspan="7" class="text-muted" style="text-align: center; padding: 24px;">No active hosts registered.</td></tr>
+                  <tr><td colspan="8" class="text-muted" style="text-align: center; padding: 24px;">No active hosts registered.</td></tr>
                 ` : summary.hosts.map(h => {
                   const m = h.latest_metric || h.latest_metrics;
                   return `
                   <tr class="clickable host-row" data-host-id="${h.host_id}">
                     <td>${renderStatusBadge(h.status)}</td>
+                    <td>${renderSourceBadge(h.source_type)}</td>
                     <td class="mono" style="font-weight: 600;">${escapeHtml(h.hostname)}</td>
                     <td><span class="badge badge-info">${escapeHtml(h.environment || 'default')}</span></td>
                     <td>${renderSparkbar(m ? m.cpu_percent : 0)}</td>

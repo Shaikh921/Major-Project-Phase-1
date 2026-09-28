@@ -6,6 +6,7 @@ CORS middleware, and REST API routing for all platform modules.
 """
 
 import os
+# CloudOps Intel / SRE Command Center - Main Application Entrypoint
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -39,10 +40,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Enable CORS for frontend dashboard access
+# Enable CORS for frontend dashboard access with explicit configurable origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

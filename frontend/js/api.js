@@ -1,13 +1,16 @@
 /**
  * Centralized REST API Client.
- * Handles request timeouts, status checks, error normalization, and caching.
+ * Handles request timeouts, status checks, error normalization,
+ * in-memory Bearer token injection, and automatic 401 refresh handling.
  */
 
 import { CONFIG } from "./config.js";
+import { authManager } from "./auth.js";
 
 class ApiClient {
   constructor(baseUrl = CONFIG.API_BASE_URL) {
     this.baseUrl = baseUrl;
+    this._isRefreshing = false;
   }
 
   async request(endpoint, options = {}) {
@@ -17,6 +20,11 @@ class ApiClient {
       ...(options.headers || {}),
     };
 
+    // Inject in-memory access token if available
+    if (authManager.accessToken && !headers["Authorization"]) {
+      headers["Authorization"] = `Bearer ${authManager.accessToken}`;
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), options.timeout || 12000);
 
@@ -24,10 +32,29 @@ class ApiClient {
       const response = await fetch(url, {
         ...options,
         headers,
+        credentials: "same-origin", // Pass HttpOnly refresh cookie
         signal: controller.signal,
       });
 
       clearTimeout(timeout);
+
+      // Handle 401 Unauthorized with single silent refresh attempt
+      if (response.status === 401 && !endpoint.startsWith("/auth/login") && !endpoint.startsWith("/auth/refresh") && !this._isRefreshing) {
+        this._isRefreshing = true;
+        try {
+          const refreshRes = await this.refreshSession();
+          if (refreshRes && refreshRes.access_token) {
+            authManager.setSession(refreshRes.access_token, refreshRes.user, refreshRes.expires_in_seconds);
+            this._isRefreshing = false;
+            // Retry original request with newly acquired access token
+            return await this.request(endpoint, options);
+          }
+        } catch (refreshErr) {
+          authManager.clearSession();
+        } finally {
+          this._isRefreshing = false;
+        }
+      }
 
       if (!response.ok) {
         let errorDetail = `HTTP ${response.status} ${response.statusText}`;
@@ -51,14 +78,159 @@ class ApiClient {
     }
   }
 
-  // --- API Methods ---
+  // --- Authentication API Methods ---
 
-  // Summary
+  login(email, password) {
+    return this.request("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  refreshSession() {
+    return this.request("/auth/refresh", {
+      method: "POST",
+    });
+  }
+
+  logout() {
+    return this.request("/auth/logout", {
+      method: "POST",
+    });
+  }
+
+  getMe() {
+    return this.request("/auth/me");
+  }
+
+  verifyEmail(token) {
+    return this.request("/auth/verify-email", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    });
+  }
+
+  forgotPassword(email) {
+    return this.request("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  resetPassword(token, newPassword) {
+    return this.request("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ token, new_password: newPassword }),
+    });
+  }
+
+  createInternalUser(userData) {
+    return this.request("/auth/users", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    });
+  }
+
+  // --- Admin Registration Request Workflow ---
+  requestAdminAccess(data) {
+    return this.request("/auth/admin-request", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  verifyAdminRequest(token) {
+    return this.request("/auth/admin-request/verify", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    });
+  }
+
+  activateAdminAccount(token, newPassword) {
+    return this.request("/auth/admin-request/activate", {
+      method: "POST",
+      body: JSON.stringify({ token, new_password: newPassword }),
+    });
+  }
+
+  // --- Super Admin Management Operations ---
+  getAdminStats() {
+    return this.request("/admin/stats");
+  }
+
+  getAdminRequests(status = null) {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+    return this.request(`/admin/requests${qs}`);
+  }
+
+  getAdminRequestDetails(id) {
+    return this.request(`/admin/requests/${id}`);
+  }
+
+  approveAdminRequest(id) {
+    return this.request(`/admin/requests/${id}/approve`, {
+      method: "POST",
+    });
+  }
+
+  rejectAdminRequest(id, reason = null) {
+    return this.request(`/admin/requests/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  getAdminUsers() {
+    return this.request("/admin/users");
+  }
+
+  getAdminUserDetails(id) {
+    return this.request(`/admin/users/${id}`);
+  }
+
+  disableAdminUser(id) {
+    return this.request(`/admin/users/${id}/disable`, {
+      method: "POST",
+    });
+  }
+
+  enableAdminUser(id) {
+    return this.request(`/admin/users/${id}/enable`, {
+      method: "POST",
+    });
+  }
+
+  revokeAdminSessions(id) {
+    return this.request(`/admin/users/${id}/revoke-sessions`, {
+      method: "POST",
+    });
+  }
+
+  forceAdminPasswordReset(id) {
+    return this.request(`/admin/users/${id}/force-password-reset`, {
+      method: "POST",
+    });
+  }
+
+  softDeleteAdminUser(id) {
+    return this.request(`/admin/users/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  sendSmtpTestEmail(recipient) {
+    return this.request("/admin/email/test", {
+      method: "POST",
+      body: JSON.stringify({ recipient }),
+    });
+  }
+
+  // --- Summary ---
   getFleetSummary() {
     return this.request("/summary");
   }
 
-  // Hosts
+  // --- Hosts ---
   getHosts(params = {}) {
     const qs = new URLSearchParams();
     if (params.active_only) qs.set("active_only", "true");
@@ -83,7 +255,7 @@ class ApiClient {
     });
   }
 
-  // Metrics
+  // --- Metrics ---
   getHostMetrics(hostId, limit = 100, startTime = null, endTime = null) {
     const qs = new URLSearchParams({ host_id: hostId, limit: String(limit) });
     if (startTime) qs.set("start_time", startTime);
@@ -91,7 +263,7 @@ class ApiClient {
     return this.request(`/metrics?${qs.toString()}`);
   }
 
-  // Alerts & Rules
+  // --- Alerts & Rules ---
   getAlerts(params = {}) {
     const qs = new URLSearchParams();
     if (params.host_id) qs.set("host_id", String(params.host_id));
@@ -128,7 +300,7 @@ class ApiClient {
     return this.request(`/alerts/rules/${ruleId}`, { method: "DELETE" });
   }
 
-  // AI & Forecasting
+  // --- AI & Forecasting ---
   scoreTelemetrySample(features) {
     return this.request("/ai/score", {
       method: "POST",
@@ -149,7 +321,7 @@ class ApiClient {
     return this.request("/ai/models");
   }
 
-  // Security
+  // --- Security ---
   getSecuritySummary() {
     return this.request("/security/summary");
   }
@@ -168,7 +340,7 @@ class ApiClient {
     });
   }
 
-  // Cost
+  // --- Cost ---
   getCostSummary() {
     return this.request("/cost/summary");
   }
@@ -180,7 +352,7 @@ class ApiClient {
     });
   }
 
-  // Narrator
+  // --- Narrator ---
   queryNarrator(query, hostId = null, env = null, windowMinutes = 60) {
     return this.request("/narrator/query", {
       method: "POST",
@@ -193,7 +365,7 @@ class ApiClient {
     });
   }
 
-  // Reports & Audit
+  // --- Reports & Audit ---
   generateReport(timeRangeHours = 24, environment = null) {
     return this.request("/reports/generate", {
       method: "POST",
@@ -207,7 +379,7 @@ class ApiClient {
     return this.request(`/audit/logs?${qs.toString()}`);
   }
 
-  // Currency & FX
+  // --- Currency & FX ---
   getSupportedCurrencies() {
     return this.request("/currency/supported");
   }

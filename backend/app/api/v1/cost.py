@@ -8,7 +8,8 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from backend.app.api.deps import get_db
+from backend.app.api.deps import get_db, get_current_viewer, get_current_operator
+from backend.app.models.user import User
 from backend.app.schemas.cost import (
     CostSummaryResponse,
     CostRecommendationRead,
@@ -24,6 +25,7 @@ router = APIRouter(prefix="/cost", tags=["Cost Optimization"])
 
 @router.get("/summary", response_model=CostSummaryResponse)
 def get_cost_summary(
+    current_user: User = Depends(get_current_viewer),
     db: Session = Depends(get_db),
 ):
     """
@@ -37,10 +39,11 @@ def get_cost_summary(
 def update_recommendation(
     rec_id: int,
     action: CostRecommendationAction,
+    current_user: User = Depends(get_current_operator),
     db: Session = Depends(get_db),
 ):
     """
-    Updates the status of a cost recommendation (e.g. accepted, dismissed).
+    Updates the status of a cost recommendation (e.g. accepted, dismissed). Requires OPERATOR role.
     """
     rec = update_recommendation_status(db, rec_id, action)
     if not rec:

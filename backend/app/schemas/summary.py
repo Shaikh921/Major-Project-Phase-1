@@ -23,6 +23,7 @@ class HostStatusSummary(BaseModel):
     environment: str
     provider: Optional[str] = None
     region: Optional[str] = None
+    source_type: str = Field(default="UNKNOWN", description="Telemetry source type: REAL_AGENT, SIMULATED, CLOUD_PROVIDER, UNKNOWN")
     is_active: bool
     status: str = Field(default="healthy", description="'healthy', 'warning', 'critical', or 'offline'")
     last_seen: Optional[datetime] = None

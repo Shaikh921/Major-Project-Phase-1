@@ -1,6 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
 from backend.app.main import app
+from backend.app.models.user import User
+from backend.app.api.deps import get_current_viewer, get_current_operator, get_current_admin
 from backend.app.services.currency_service import (
     fetch_exchange_rates,
     get_supported_currencies,
@@ -9,6 +11,17 @@ from backend.app.services.currency_service import (
 )
 
 client = TestClient(app)
+
+@pytest.fixture(scope="module", autouse=True)
+def setup_currency_auth_overrides():
+    mock_admin = User(id=1, email="test-admin@ops.local", password_hash="dummy", role="ADMIN", is_active=True, is_verified=True)
+    app.dependency_overrides[get_current_viewer] = lambda: mock_admin
+    app.dependency_overrides[get_current_operator] = lambda: mock_admin
+    app.dependency_overrides[get_current_admin] = lambda: mock_admin
+    yield
+    app.dependency_overrides.pop(get_current_viewer, None)
+    app.dependency_overrides.pop(get_current_operator, None)
+    app.dependency_overrides.pop(get_current_admin, None)
 
 def test_supported_currencies_endpoint():
     response = client.get("/api/v1/currency/supported")

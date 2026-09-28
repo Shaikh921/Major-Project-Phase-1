@@ -8,7 +8,8 @@ Metrics, Alerts, Security Events, and Cost.
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from backend.app.api.deps import get_db
+from backend.app.api.deps import get_db, get_current_viewer
+from backend.app.models.user import User
 from backend.app.schemas.narrator import NarratorQueryRequest, NarratorQueryResponse
 from backend.app.services.narrator_service import execute_narrator_query
 
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/narrator", tags=["AI Incident Narrator"])
 @router.post("/query", response_model=NarratorQueryResponse)
 def query_incident_narrator(
     req: NarratorQueryRequest,
+    current_user: User = Depends(get_current_viewer),
     db: Session = Depends(get_db),
 ):
     """

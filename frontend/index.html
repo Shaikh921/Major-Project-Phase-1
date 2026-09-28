@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cloud Resource Monitoring & Intelligence Command Center</title>
-  <link rel="stylesheet" href="css/design-system.css?v=3.1.0">
-  <link rel="stylesheet" href="css/command-center.css?v=3.1.0">
+  <link rel="stylesheet" href="css/design-system.css?v=3.4.0">
+  <link rel="stylesheet" href="css/command-center.css?v=3.4.0">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -86,6 +86,12 @@
         </a>
 
         <div class="nav-section-title">Administration</div>
+        <a class="nav-item" data-view="admin-management" title="Admin Management" style="display: none;">
+          <span class="nav-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          </span>
+          <span class="nav-label">Admin Management</span>
+        </a>
         <a class="nav-item" data-view="audit" title="Audit Trail">
           <span class="nav-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-md"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
@@ -161,8 +167,10 @@
             <span id="notif-badge" class="nav-badge" style="display: none; position: absolute; top: -4px; right: -4px;">0</span>
           </button>
 
-          <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; padding-left: 8px; border-left: 1px solid var(--border-subtle);">
-            <span class="mono text-muted">sre-admin@ops.local</span>
+          <div id="header-user-container" style="display: flex; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; padding-left: 8px; border-left: 1px solid var(--border-subtle);">
+              <span class="badge badge-info" style="font-size: 10px;">GUEST</span>
+            </div>
           </div>
         </div>
       </header>
@@ -179,6 +187,6 @@
     </aside>
   </div>
 
-  <script type="module" src="js/app.js?v=3.3.0"></script>
+  <script type="module" src="js/app.js?v=3.4.0"></script>
 </body>
 </html>

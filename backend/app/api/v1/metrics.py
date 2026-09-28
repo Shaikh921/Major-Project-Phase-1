@@ -9,7 +9,8 @@ from typing import Optional, Dict, Any, Union
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from backend.app.api.deps import get_db
+from backend.app.api.deps import get_db, get_current_viewer
+from backend.app.models.user import User
 from backend.app.schemas.metric import (
     MetricCreate,
     MetricBatchCreate,
@@ -52,6 +53,7 @@ def get_metrics_timeseries(
     limit: int = Query(default=100, ge=1, le=1000, description="Max sample points to return"),
     start_time: Optional[datetime] = Query(None, description="Start timestamp (UTC)"),
     end_time: Optional[datetime] = Query(None, description="End timestamp (UTC)"),
+    current_user: User = Depends(get_current_viewer),
     db: Session = Depends(get_db),
 ):
     """

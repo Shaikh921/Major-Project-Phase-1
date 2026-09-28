@@ -55,6 +55,7 @@ class MonitoringAgent:
                 sample["environment"] = self.environment
                 sample["provider"] = self.provider
                 sample["region"] = self.region
+                sample["source_type"] = "REAL_AGENT"
 
                 # 2. Push to local buffer
                 self.buffer.push(sample)

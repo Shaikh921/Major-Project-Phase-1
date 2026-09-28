@@ -8,7 +8,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from backend.app.api.deps import get_db
+from backend.app.api.deps import get_db, get_current_viewer, get_current_operator
+from backend.app.models.user import User
 from backend.app.schemas.security import (
     SecurityEventCreate,
     SecurityEventRead,
@@ -27,6 +28,7 @@ router = APIRouter(prefix="/security", tags=["Security & Intrusion Detection"])
 
 @router.get("/summary", response_model=SecuritySummaryResponse)
 def get_security_health_summary(
+    current_user: User = Depends(get_current_viewer),
     db: Session = Depends(get_db),
 ):
     """Returns aggregated security event counts by severity and recent threats."""
@@ -39,6 +41,7 @@ def list_security_events(
     severity: Optional[str] = Query(None, description="Filter by severity (critical, high, medium, low)"),
     status: Optional[str] = Query(None, description="Filter by status (open, investigating, mitigated)"),
     limit: int = Query(default=100, ge=1, le=500),
+    current_user: User = Depends(get_current_viewer),
     db: Session = Depends(get_db),
 ):
     """Lists security events matching filter criteria."""
@@ -71,9 +74,10 @@ def list_security_events(
 @router.post("/events", response_model=SecurityEventRead, status_code=status.HTTP_201_CREATED)
 def create_security_event(
     event_in: SecurityEventCreate,
+    current_user: User = Depends(get_current_operator),
     db: Session = Depends(get_db),
 ):
-    """Records a new security event from monitoring collectors or flow logs."""
+    """Records a new security event from monitoring collectors or flow logs. Requires OPERATOR role."""
     event = record_security_event(db, event_in)
     return SecurityEventRead(
         id=event.id,
@@ -95,9 +99,10 @@ def create_security_event(
 def update_event_status(
     event_id: int,
     status_in: SecurityStatusUpdate,
+    current_user: User = Depends(get_current_operator),
     db: Session = Depends(get_db),
 ):
-    """Updates the operational status of a security event (e.g. mitigated, false_positive)."""
+    """Updates the operational status of a security event (e.g. mitigated, false_positive). Requires OPERATOR role."""
     event = update_security_event_status(db, event_id, status_in)
     if not event:
         raise HTTPException(

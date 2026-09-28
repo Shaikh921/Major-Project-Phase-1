@@ -37,7 +37,10 @@ export async function renderMetricsView(container) {
         </div>
         <div style="display: flex; gap: 8px;">
           <select id="metric-host-select" class="select-control">
-            ${hosts.map(h => `<option value="${h.id}">${escapeHtml(h.hostname)} (${escapeHtml(h.environment)})</option>`).join("")}
+            ${hosts.map(h => {
+              const srcTag = h.source_type === "REAL_AGENT" ? "[REAL AGENT]" : (h.source_type === "SIMULATED" ? "[SIMULATED]" : "[CLOUD]");
+              return `<option value="${h.id}">${srcTag} ${escapeHtml(h.hostname)} (${escapeHtml(h.environment)})</option>`;
+            }).join("")}
           </select>
           <select id="metric-limit-select" class="select-control">
             <option value="30">Last 30 Samples</option>

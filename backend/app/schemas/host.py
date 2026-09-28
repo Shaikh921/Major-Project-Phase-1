@@ -17,6 +17,7 @@ class HostBase(BaseModel):
     instance_type: Optional[str] = Field(None, description="Cloud instance size or flavor")
     provider: Optional[str] = Field(default="bare-metal", description="Cloud or infrastructure provider")
     region: Optional[str] = Field(default="local", description="Cloud region or datacenter location")
+    source_type: str = Field(default="UNKNOWN", description="Telemetry source classification (e.g. REAL_AGENT, SIMULATED, CLOUD_PROVIDER, UNKNOWN)")
     tags: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Metadata tags for grouping and filtering")
 
 
@@ -32,6 +33,7 @@ class HostUpdate(BaseModel):
     instance_type: Optional[str] = None
     provider: Optional[str] = None
     region: Optional[str] = None
+    source_type: Optional[str] = None
     is_active: Optional[bool] = None
     tags: Optional[Dict[str, Any]] = None
 

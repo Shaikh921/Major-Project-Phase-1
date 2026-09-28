@@ -35,6 +35,23 @@ from backend.app.schemas.ai import (
     ModelMetadataResponse,
 )
 
+from backend.app.schemas.auth import (
+    LoginRequest,
+    TokenResponse,
+    UserRead,
+    UserCreateInternal,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+    VerifyEmailRequest,
+    MessageResponse,
+    AdminRegistrationRequestCreate,
+    AdminRegistrationRequestRead,
+    AdminRequestReject,
+    AdminActivateAccountRequest,
+    AdminUserRead,
+    AdminSummaryStats,
+)
+
 __all__ = [
     "HostBase",
     "HostCreate",
@@ -63,4 +80,18 @@ __all__ = [
     "ModelTrainRequest",
     "ModelTrainResponse",
     "ModelMetadataResponse",
+    "LoginRequest",
+    "TokenResponse",
+    "UserRead",
+    "UserCreateInternal",
+    "ForgotPasswordRequest",
+    "ResetPasswordRequest",
+    "VerifyEmailRequest",
+    "MessageResponse",
+    "AdminRegistrationRequestCreate",
+    "AdminRegistrationRequestRead",
+    "AdminRequestReject",
+    "AdminActivateAccountRequest",
+    "AdminUserRead",
+    "AdminSummaryStats",
 ]

@@ -4,7 +4,7 @@
 
 import { api } from "../api.js";
 import { escapeHtml, formatRelativeTime, formatTimestamp } from "../sanitizer.js";
-import { renderStatusBadge } from "../components/StatusBadge.js";
+import { renderStatusBadge, renderSourceBadge } from "../components/StatusBadge.js";
 import { renderSparkbar } from "../components/Sparkbar.js";
 import { openModal, closeModal } from "../components/Modal.js";
 import { store } from "../config.js";
@@ -24,17 +24,19 @@ export async function renderResourcesView(container) {
       api.getFleetSummary().catch(() => ({ hosts: [] })),
     ]);
 
-    // Map metrics to hosts
+    // Map metrics and summary data to hosts
     const metricsMap = new Map();
+    const summaryHostMap = new Map();
     for (const h of summary.hosts || []) {
-      metricsMap.set(h.host_id, h.latest_metrics);
+      metricsMap.set(h.host_id, h.latest_metrics || h.latest_metric);
+      summaryHostMap.set(h.host_id, h);
     }
 
     container.innerHTML = `
       <div class="view-header">
         <div class="view-title-group">
           <h1>Infrastructure & Monitored Fleet</h1>
-          <p>Real-time cluster inventory, provisioning metadata, and resource utilization.</p>
+          <p>Verified compute inventory, telemetry source classification (Real Agent vs. Simulation), and live utilization.</p>
         </div>
         <div style="display: flex; gap: 8px;">
           <button class="btn btn-primary btn-sm" id="register-host-btn">${renderIcon("plus", { size: "xs" })} Register Host</button>
@@ -44,17 +46,23 @@ export async function renderResourcesView(container) {
 
       <!-- Filter Bar -->
       <div class="panel" style="padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
-          <input type="text" id="host-filter-input" class="input-control" placeholder="Filter by hostname, IP, region..." style="width: 260px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex: 1; flex-wrap: wrap;">
+          <input type="text" id="host-filter-input" class="input-control" placeholder="Filter by hostname, IP, region..." style="width: 240px;">
+          <select id="source-filter-select" class="select-control">
+            <option value="all">All Sources</option>
+            <option value="REAL_AGENT">Real Agent</option>
+            <option value="SIMULATED">Simulated Fleet</option>
+          </select>
           <select id="env-filter-select" class="select-control">
             <option value="all">All Environments</option>
             <option value="production">Production</option>
             <option value="staging">Staging</option>
             <option value="development">Development</option>
+            <option value="local">Local</option>
           </select>
         </div>
         <div class="text-muted" style="font-size: 11.5px;">
-          <span id="filtered-count">${hosts.length}</span> of ${hosts.length} hosts active
+          <span id="filtered-count">${hosts.length}</span> of ${hosts.length} nodes active
         </div>
       </div>
 
@@ -64,6 +72,7 @@ export async function renderResourcesView(container) {
           <thead>
             <tr>
               <th>Status</th>
+              <th>Source</th>
               <th>Hostname</th>
               <th>IP Address</th>
               <th>Environment</th>
@@ -79,18 +88,24 @@ export async function renderResourcesView(container) {
           <tbody id="hosts-table-body">
             ${hosts.map(h => {
               const m = metricsMap.get(h.id);
+              const sumHost = summaryHostMap.get(h.id);
+              const effectiveStatus = sumHost ? sumHost.status : (h.is_active ? "healthy" : "offline");
+              const effectiveSource = h.source_type || (sumHost ? sumHost.source_type : "UNKNOWN");
+              const effectiveLastSeen = (m && m.timestamp) || (sumHost && sumHost.last_seen) || h.updated_at;
+
               return `
-                <tr class="host-item-row" data-hostname="${escapeHtml(h.hostname)}" data-ip="${escapeHtml(h.ip_address || '')}" data-env="${escapeHtml(h.environment || '')}">
-                  <td>${renderStatusBadge(h.status)}</td>
+                <tr class="host-item-row" data-hostname="${escapeHtml(h.hostname)}" data-ip="${escapeHtml(h.ip_address || '')}" data-env="${escapeHtml(h.environment || '')}" data-source="${escapeHtml(effectiveSource)}">
+                  <td>${renderStatusBadge(effectiveStatus)}</td>
+                  <td>${renderSourceBadge(effectiveSource)}</td>
                   <td class="mono" style="font-weight: 600;">${escapeHtml(h.hostname)}</td>
                   <td class="mono text-muted">${escapeHtml(h.ip_address || '—')}</td>
                   <td><span class="badge badge-info">${escapeHtml(h.environment || 'default')}</span></td>
-                  <td class="mono" style="font-size: 11px;">${escapeHtml(h.instance_type || 't3.medium')}</td>
-                  <td class="text-secondary" style="font-size: 11px;">${escapeHtml(h.provider || 'AWS')} / ${escapeHtml(h.region || 'us-east-1')}</td>
+                  <td class="mono" style="font-size: 11px;">${escapeHtml(h.instance_type || 'bare-metal')}</td>
+                  <td class="text-secondary" style="font-size: 11px;">${escapeHtml(h.provider || 'bare-metal')} / ${escapeHtml(h.region || 'local')}</td>
                   <td>${renderSparkbar(m ? m.cpu_percent : 0)}</td>
                   <td>${renderSparkbar(m ? m.memory_percent : 0)}</td>
                   <td>${renderSparkbar(m ? m.disk_percent : 0)}</td>
-                  <td class="text-muted mono" style="font-size: 11px;">${formatRelativeTime(h.last_seen)}</td>
+                  <td class="text-muted mono" style="font-size: 11px;">${formatRelativeTime(effectiveLastSeen)}</td>
                   <td>
                     <button class="btn btn-sm view-host-btn" data-host-id="${h.id}">Details</button>
                   </td>
@@ -104,11 +119,13 @@ export async function renderResourcesView(container) {
 
     // Filter Logic
     const searchInput = document.getElementById("host-filter-input");
+    const sourceSelect = document.getElementById("source-filter-select");
     const envSelect = document.getElementById("env-filter-select");
     const countDisplay = document.getElementById("filtered-count");
 
     const applyFilters = () => {
       const q = (searchInput ? searchInput.value : "").toLowerCase().trim();
+      const sourceFilter = sourceSelect ? sourceSelect.value : "all";
       const env = envSelect ? envSelect.value : "all";
       const rows = container.querySelectorAll(".host-item-row");
       let visible = 0;
@@ -117,11 +134,13 @@ export async function renderResourcesView(container) {
         const name = r.getAttribute("data-hostname").toLowerCase();
         const ip = r.getAttribute("data-ip").toLowerCase();
         const rowEnv = r.getAttribute("data-env").toLowerCase();
+        const rowSource = r.getAttribute("data-source") || "UNKNOWN";
 
         const matchesQuery = !q || name.includes(q) || ip.includes(q);
         const matchesEnv = env === "all" || rowEnv === env;
+        const matchesSource = sourceFilter === "all" || rowSource === sourceFilter;
 
-        if (matchesQuery && matchesEnv) {
+        if (matchesQuery && matchesEnv && matchesSource) {
           r.style.display = "";
           visible++;
         } else {
@@ -132,6 +151,7 @@ export async function renderResourcesView(container) {
     };
 
     if (searchInput) searchInput.oninput = applyFilters;
+    if (sourceSelect) sourceSelect.onchange = applyFilters;
     if (envSelect) envSelect.onchange = applyFilters;
 
     const refreshBtn = document.getElementById("resources-refresh-btn");
@@ -187,30 +207,36 @@ async function openHostDetailsModal(hostId) {
 
     const content = `
       <div style="display: flex; flex-direction: column; gap: 14px;">
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: var(--bg-surface-elevated); padding: 12px; border-radius: var(--radius-sm);">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: var(--bg-surface-elevated); padding: 12px; border-radius: var(--radius-sm);">
           <div>
             <div class="text-muted" style="font-size: 10.5px;">HOSTNAME</div>
             <div class="mono" style="font-weight: 600;">${escapeHtml(host.hostname)}</div>
           </div>
           <div>
-            <div class="text-muted" style="font-size: 10.5px;">IP ADDRESS</div>
-            <div class="mono">${escapeHtml(host.ip_address || '—')}</div>
+            <div class="text-muted" style="font-size: 10.5px;">SOURCE TYPE</div>
+            <div>${renderSourceBadge(host.source_type)}</div>
           </div>
           <div>
             <div class="text-muted" style="font-size: 10.5px;">ENVIRONMENT</div>
             <div><span class="badge badge-info">${escapeHtml(host.environment || 'default')}</span></div>
           </div>
           <div>
-            <div class="text-muted" style="font-size: 10.5px;">INSTANCE TYPE</div>
-            <div class="mono">${escapeHtml(host.instance_type || 't3.medium')}</div>
-          </div>
-          <div>
-            <div class="text-muted" style="font-size: 10.5px;">PROVIDER / REGION</div>
-            <div>${escapeHtml(host.provider || 'AWS')} / ${escapeHtml(host.region || 'us-east-1')}</div>
-          </div>
-          <div>
             <div class="text-muted" style="font-size: 10.5px;">STATUS</div>
             <div>${renderStatusBadge(host.status)}</div>
+          </div>
+          <div>
+            <div class="text-muted" style="font-size: 10.5px;">IP ADDRESS</div>
+            <div class="mono">${escapeHtml(host.ip_address || '—')}</div>
+          </div>
+          <div>
+            <div class="text-muted" style="font-size: 10.5px;">INSTANCE TYPE</div>
+            <div class="mono">${escapeHtml(host.instance_type || 'bare-metal')}</div>
+          </div>
+          <div style="grid-column: span 2;">
+            <div class="text-muted" style="font-size: 10.5px;">TELEMETRY LINEAGE</div>
+            <div class="mono" style="font-size: 11px; color: var(--text-primary);">
+              ${host.source_type === 'REAL_AGENT' ? 'Real Host OS Kernel (psutil daemon)' : (host.source_type === 'SIMULATED' ? 'Synthetic Multi-Node Simulator (Testing Profile)' : 'Cloud Telemetry Feed')}
+            </div>
           </div>
         </div>
 

@@ -9,7 +9,13 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from backend.app.api.deps import get_db
+from backend.app.api.deps import (
+    get_db,
+    get_current_viewer,
+    get_current_operator,
+    get_current_admin,
+)
+from backend.app.models.user import User
 from backend.app.schemas.alert import (
     AlertRead,
     AlertRuleCreate,
@@ -42,6 +48,7 @@ def list_alerts(
     severity: Optional[str] = Query(None, description="Filter by severity: info, warning, critical"),
     kind: Optional[str] = Query(None, description="Filter by kind: threshold, anomaly, forecast, security"),
     limit: int = Query(default=100, ge=1, le=500),
+    current_user: User = Depends(get_current_viewer),
     db: Session = Depends(get_db),
 ):
     """
@@ -80,6 +87,7 @@ def list_alerts(
 @router.post("/{alert_id}/ack", response_model=AlertRead)
 def ack_alert(
     alert_id: int,
+    current_user: User = Depends(get_current_operator),
     db: Session = Depends(get_db),
 ):
     """
@@ -113,6 +121,7 @@ def ack_alert(
 def submit_alert_feedback(
     alert_id: int,
     feedback_in: AlertFeedbackCreate,
+    current_user: User = Depends(get_current_operator),
     db: Session = Depends(get_db),
 ):
     """
@@ -131,10 +140,11 @@ def submit_alert_feedback(
 
 @router.get("/rules", response_model=List[AlertRuleRead])
 def list_alert_rules(
+    current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
     """
-    Retrieves all configured threshold rules (M1-FR5).
+    Retrieves all configured threshold rules (M1-FR5). Requires ADMIN role.
     """
     return get_rules(db)
 
@@ -142,10 +152,11 @@ def list_alert_rules(
 @router.post("/rules", response_model=AlertRuleRead, status_code=status.HTTP_201_CREATED)
 def create_rule(
     rule_in: AlertRuleCreate,
+    current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
     """
-    Configures a new threshold alert rule.
+    Configures a new threshold alert rule. Requires ADMIN role.
     """
     return create_alert_rule(db, rule_in)
 
@@ -154,10 +165,11 @@ def create_rule(
 def update_rule(
     rule_id: int,
     rule_in: AlertRuleUpdate,
+    current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
     """
-    Updates an existing threshold alert rule.
+    Updates an existing threshold alert rule. Requires ADMIN role.
     """
     rule = update_alert_rule(db, rule_id, rule_in)
     if not rule:
@@ -171,10 +183,11 @@ def update_rule(
 @router.delete("/rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_rule(
     rule_id: int,
+    current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db),
 ):
     """
-    Deletes an alert rule.
+    Deletes an alert rule. Requires ADMIN role.
     """
     deleted = delete_alert_rule(db, rule_id)
     if not deleted:

@@ -10,7 +10,8 @@ from sqlalchemy.pool import StaticPool
 
 from backend.app.database.base import Base
 from backend.app.database.init_db import seed_default_rules
-from backend.app.api.deps import get_db
+from backend.app.models.user import User
+from backend.app.api.deps import get_db, get_current_viewer, get_current_operator, get_current_admin
 from backend.app.main import app
 
 
@@ -34,9 +35,17 @@ def setup_v1_test_database():
         finally:
             db.close()
 
+    mock_admin = User(id=1, email="test-admin@ops.local", password_hash="dummy", role="ADMIN", is_active=True, is_verified=True)
+    from backend.app.api.deps import get_current_viewer, get_current_operator, get_current_admin
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_current_viewer] = lambda: mock_admin
+    app.dependency_overrides[get_current_operator] = lambda: mock_admin
+    app.dependency_overrides[get_current_admin] = lambda: mock_admin
     yield
     app.dependency_overrides.pop(get_db, None)
+    app.dependency_overrides.pop(get_current_viewer, None)
+    app.dependency_overrides.pop(get_current_operator, None)
+    app.dependency_overrides.pop(get_current_admin, None)
     Base.metadata.drop_all(bind=engine)
 
 
