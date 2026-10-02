@@ -31,11 +31,19 @@ from ai_engine.model_registry import ModelRegistry
 def load_cloud_anomaly_dataset(zip_path: str = "archive (1).zip") -> tuple[pd.DataFrame, np.ndarray, np.ndarray]:
     """
     Extracts, cleans, and prepares the 277k-sample Cloud Anomaly Dataset.
+    Supports reading from archive (1).zip or directly from data/Cloud_Anomaly_Dataset.csv.
     """
-    print(f"[*] Extracting and parsing {zip_path}...")
-    with zipfile.ZipFile(zip_path, "r") as z:
-        with z.open("Cloud_Anomaly_Dataset.csv") as f:
-            df = pd.read_csv(f)
+    csv_fallback = os.path.join("data", "Cloud_Anomaly_Dataset.csv")
+    if os.path.exists(csv_fallback):
+        print(f"[*] Loading dataset directly from {csv_fallback}...")
+        df = pd.read_csv(csv_fallback)
+    elif os.path.exists(zip_path):
+        print(f"[*] Extracting and parsing {zip_path}...")
+        with zipfile.ZipFile(zip_path, "r") as z:
+            with z.open("Cloud_Anomaly_Dataset.csv") as f:
+                df = pd.read_csv(f)
+    else:
+        raise FileNotFoundError(f"Neither {zip_path} nor {csv_fallback} found.")
 
     # Feature mapping to platform dimensions
     feature_cols = [
@@ -57,15 +65,24 @@ def load_cloud_anomaly_dataset(zip_path: str = "archive (1).zip") -> tuple[pd.Da
 def load_cluster_kpi_dataset(zip_path: str = "AIClusterKPI.zip") -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Extracts multi-node cluster time-series and labeled test events.
+    Supports reading from AIClusterKPI.zip or data/*.csv.
     """
-    print(f"[*] Extracting and parsing {zip_path}...")
-    with zipfile.ZipFile(zip_path, "r") as z:
-        with z.open("train1.csv") as f:
-            train1 = pd.read_csv(f)
-        with z.open("train2.csv") as f:
-            train2 = pd.read_csv(f)
-        with z.open("test.csv") as f:
-            test = pd.read_csv(f)
+    if os.path.exists("data/train1.csv") and os.path.exists("data/test.csv"):
+        print("[*] Loading cluster KPI data from data/ directory...")
+        train1 = pd.read_csv("data/train1.csv")
+        train2 = pd.read_csv("data/train2.csv") if os.path.exists("data/train2.csv") else pd.DataFrame()
+        test = pd.read_csv("data/test.csv")
+    elif os.path.exists(zip_path):
+        print(f"[*] Extracting and parsing {zip_path}...")
+        with zipfile.ZipFile(zip_path, "r") as z:
+            with z.open("train1.csv") as f:
+                train1 = pd.read_csv(f)
+            with z.open("train2.csv") as f:
+                train2 = pd.read_csv(f)
+            with z.open("test.csv") as f:
+                test = pd.read_csv(f)
+    else:
+        raise FileNotFoundError(f"Neither {zip_path} nor data/ directory files found.")
 
     train_df = pd.concat([train1, train2], ignore_index=True)
     return train_df, test, None
@@ -81,8 +98,9 @@ def run_training_pipeline(args):
 
     if args.dataset == "cloud":
         zip_file = "archive (1).zip"
-        if not os.path.exists(zip_file):
-            print(f"[!] Error: {zip_file} not found in workspace root.")
+        csv_file = os.path.join("data", "Cloud_Anomaly_Dataset.csv")
+        if not os.path.exists(zip_file) and not os.path.exists(csv_file):
+            print(f"[!] Error: Neither {zip_file} nor {csv_file} found in workspace.")
             return
 
         df, X, y = load_cloud_anomaly_dataset(zip_file)
@@ -182,7 +200,14 @@ def run_training_pipeline(args):
             training_info=train_info,
             version=args.version,
         )
-        print(f"\n[+] Production Checkpoint Saved: {file_path}")
+        # Also update fleet_anomaly_detector alias
+        registry.save_model(
+            model_name="fleet_anomaly_detector",
+            detector=detector,
+            training_info=train_info,
+            version=args.version,
+        )
+        print(f"\n[+] Production Checkpoints Saved: {file_path} and fleet_anomaly_detector_v1.joblib")
 
     elif args.dataset == "cluster":
         zip_file = "AIClusterKPI.zip"

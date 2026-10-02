@@ -23,6 +23,7 @@ def create_host(
     provider: Optional[str] = "bare-metal",
     region: Optional[str] = "local",
     source_type: str = "UNKNOWN",
+    owner_email: Optional[str] = None,
     tags: Optional[Dict[str, Any]] = None,
 ) -> Host:
     """
@@ -36,6 +37,7 @@ def create_host(
         provider=provider,
         region=region,
         source_type=source_type,
+        owner_email=owner_email,
         tags=tags or {},
         is_active=True,
     )
@@ -53,10 +55,11 @@ def get_or_create_host(
     provider: Optional[str] = "bare-metal",
     region: Optional[str] = "local",
     source_type: Optional[str] = "UNKNOWN",
+    owner_email: Optional[str] = None,
 ) -> Host:
     """
     Retrieves an existing host by hostname or automatically provisions a new record (M1-FR2).
-    Updates IP address, source_type, and last seen metadata if changed.
+    Updates IP address, source_type, owner_email, and last seen metadata if changed.
     """
     statement = select(Host).where(Host.hostname == hostname)
     host = db.scalar(statement)
@@ -69,6 +72,7 @@ def get_or_create_host(
             provider=provider or "bare-metal",
             region=region or "local",
             source_type=source_type or "UNKNOWN",
+            owner_email=owner_email,
             is_active=True,
             tags={},
         )
@@ -76,13 +80,16 @@ def get_or_create_host(
         db.commit()
         db.refresh(host)
     else:
-        # Update IP, source_type, and activity if it was offline or changed
+        # Update IP, source_type, owner_email, and activity if it was offline or changed
         changed = False
         if ip_address and host.ip_address != ip_address:
             host.ip_address = ip_address
             changed = True
         if source_type and source_type != "UNKNOWN" and host.source_type != source_type:
             host.source_type = source_type
+            changed = True
+        if owner_email and host.owner_email != owner_email:
+            host.owner_email = owner_email
             changed = True
         if not host.is_active:
             host.is_active = True

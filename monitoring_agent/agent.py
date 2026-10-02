@@ -9,7 +9,13 @@ import argparse
 import os
 import sys
 import time
+from pathlib import Path
 from typing import Optional
+
+# Ensure project root is on sys.path for direct execution
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 from monitoring_agent.collector import SystemCollector
 from monitoring_agent.buffer import MetricBuffer

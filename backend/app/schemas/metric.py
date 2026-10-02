@@ -20,6 +20,7 @@ class MetricCreate(BaseModel):
     provider: Optional[str] = Field(default="bare-metal", description="Cloud provider")
     region: Optional[str] = Field(default="local", description="Cloud region")
     source_type: Optional[str] = Field(default="UNKNOWN", description="Source classification: REAL_AGENT, SIMULATED, CLOUD_PROVIDER, UNKNOWN")
+    owner_email: Optional[str] = Field(None, description="Contact or owner email for host association")
 
     timestamp: Optional[datetime] = Field(
         default_factory=lambda: datetime.now(timezone.utc),

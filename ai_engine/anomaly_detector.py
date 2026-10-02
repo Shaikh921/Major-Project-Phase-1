@@ -128,12 +128,19 @@ class MultivariateAnomalyDetector:
         base_score = 0.5 - (decision_score * 1.2)
         base_score = float(np.clip(base_score + self.sensitivity_offset, 0.0, 1.0))
 
-        if is_model_anomaly:
-            anomaly_score = max(base_score, 0.65)
+        cpu = float(sample.get("cpu_percent", 0.0))
+        mem = float(sample.get("memory_percent", 0.0))
+        disk = float(sample.get("disk_percent", 0.0))
+
+        # Check for multi-dimensional extreme pressure
+        is_extreme_pressure = (cpu >= 85.0 and mem >= 85.0) or (cpu >= 90.0 and disk >= 85.0)
+
+        if is_model_anomaly or is_extreme_pressure or base_score >= 0.60:
+            anomaly_score = max(base_score, 0.70 if is_extreme_pressure else 0.65)
             is_anomaly = True
         else:
-            anomaly_score = min(base_score, 0.55) if base_score > 0.55 else base_score
-            is_anomaly = anomaly_score >= 0.60
+            anomaly_score = min(base_score, 0.55)
+            is_anomaly = False
 
         # Compute feature attribution explainability
         contributions = FeatureAttributionEngine.compute_contributions(

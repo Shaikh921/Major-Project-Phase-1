@@ -495,3 +495,102 @@ Timestamp: {ts_str}
 This confirms that the CloudOps Intel email delivery subsystem is configured and operational.
 """
     return subject, html_content, text_content
+
+
+# ==============================================================================
+# 8. Correlated ML Anomaly (Threshold + Isolation Forest + LSTM) Template
+# ==============================================================================
+def get_correlated_anomaly_email(
+    alert_id: int,
+    host_name: str,
+    ip_address: Optional[str],
+    environment: str,
+    metric_name: str,
+    metric_value: float,
+    threshold_value: float,
+    iso_score: float,
+    lstm_score: float,
+    lstm_threshold: float,
+    explanation: str,
+    timestamp: Optional[datetime] = None,
+) -> Tuple[str, str, str]:
+    """
+    Generates a high-priority correlated anomaly incident notification.
+    Dispatched when Resource Threshold + Isolation Forest + LSTM Autoencoder all confirm an anomaly.
+    """
+    subject = f"[{settings.app_name}] CRITICAL CORRELATED INCIDENT: {host_name} (Threshold + Isolation Forest + LSTM)"
+    dashboard_url = f"{settings.frontend_url}/#anomalies"
+    ts_str = (timestamp or datetime.now(timezone.utc)).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    html_content = _base_html_layout(
+        title="High-Priority Correlated AI Incident",
+        content_html=f"""
+          <div style="display: inline-block; background-color: #dc262625; border: 1px solid #ef4444; color: #fca5a5; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; margin-bottom: 12px; font-family: monospace;">
+            AI CONSENSUS: CRITICAL MULTI-MODEL ANOMALY
+          </div>
+          <h2 style="font-size: 18px; font-weight: 700; color: #ffffff; margin: 0 0 16px 0;">
+            Correlated Infrastructure Incident Detected
+          </h2>
+          <p style="margin: 0 0 14px 0; color: #cbd5e1;">
+            A severe incident has been confirmed on host <strong style="color: #38bdf8;">{_escape(host_name)}</strong>. 
+            All three diagnostic layers (Resource Thresholds, Multivariate Isolation Forest, and Deep LSTM Autoencoder) have simultaneously flagged this event.
+          </p>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="background-color: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 14px 18px; margin: 16px 0; font-size: 13px;">
+            <tr>
+              <td style="padding: 6px 0; color: #64748b; width: 160px;">Target Host:</td>
+              <td style="padding: 6px 0; color: #f8fafc; font-family: monospace; font-weight: 600;">{_escape(host_name)} ({_escape(ip_address or 'N/A')})</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Environment:</td>
+              <td style="padding: 6px 0; color: #f8fafc; text-transform: uppercase; font-weight: 600;">{_escape(environment)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Breached Metric:</td>
+              <td style="padding: 6px 0; color: #ef4444; font-weight: 700; font-family: monospace;">{_escape(metric_name)}: {metric_value:.2f}% (Threshold: &gt;= {threshold_value:.2f}%)</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Isolation Forest Score:</td>
+              <td style="padding: 6px 0; color: #f59e0b; font-weight: 700; font-family: monospace;">{iso_score:.4f} (Anomaly Boundary: &gt;= 0.60)</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">LSTM Reconstruction Error:</td>
+              <td style="padding: 6px 0; color: #ec4899; font-weight: 700; font-family: monospace;">{lstm_score:.4f} MSE (Optimal Threshold: {lstm_threshold:.4f})</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">AI Diagnostic Summary:</td>
+              <td style="padding: 6px 0; color: #cbd5e1;">{_escape(explanation)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Detection Timestamp:</td>
+              <td style="padding: 6px 0; color: #94a3b8; font-family: monospace;">{_escape(ts_str)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; color: #64748b;">Incident Reference:</td>
+              <td style="padding: 6px 0; color: #64748b; font-family: monospace;">#{alert_id}</td>
+            </tr>
+          </table>
+          <p style="margin: 16px 0 0 0; color: #94a3b8;">
+            Please access the SRE Command Center to perform root-cause analysis, review mitigation recommendations, and acknowledge this incident.
+          </p>
+        """,
+        action_url=dashboard_url,
+        action_label="Open SRE Command Center",
+    )
+
+    text_content = f"""CLOUDOPS INTEL - CRITICAL CORRELATED INCIDENT
+SEVERITY: CRITICAL (3-LAYER CONSENSUS)
+
+Host: {host_name} ({ip_address or 'N/A'})
+Environment: {environment.upper()}
+Breached Metric: {metric_name} = {metric_value:.2f}% (Threshold: >= {threshold_value:.2f}%)
+Isolation Forest Score: {iso_score:.4f} (Threshold: >= 0.60)
+LSTM Reconstruction Error: {lstm_score:.4f} MSE (Threshold: {lstm_threshold:.4f})
+AI Diagnostic Summary: {explanation}
+Timestamp: {ts_str}
+Incident ID: #{alert_id}
+
+Investigate and remediate at:
+{dashboard_url}
+"""
+    return subject, html_content, text_content
+

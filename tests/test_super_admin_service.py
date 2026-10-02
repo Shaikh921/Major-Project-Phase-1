@@ -23,6 +23,7 @@ from backend.app.models.user import (
     AdminActivationToken,
 )
 from backend.app.models.security import AuditLog
+from backend.app.core.config import settings
 from backend.app.core.rate_limit import auth_rate_limiter
 from backend.app.services.auth_service import (
     authenticate_user,
@@ -47,6 +48,8 @@ from backend.app.schemas.auth import (
 
 @pytest.fixture(scope="module")
 def db_engine():
+    orig_smtp = settings.smtp_enabled
+    settings.smtp_enabled = False
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -58,6 +61,7 @@ def db_engine():
         seed_default_rules(db)
     yield engine
     Base.metadata.drop_all(bind=engine)
+    settings.smtp_enabled = orig_smtp
 
 
 @pytest.fixture

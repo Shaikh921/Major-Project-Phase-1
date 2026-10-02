@@ -16,6 +16,7 @@ from backend.app.api.deps import get_db
 from backend.app.main import app
 from backend.app.models.user import User, UserRole, UserSession, EmailVerificationToken, PasswordResetToken
 from backend.app.models.security import AuditLog
+from backend.app.core.config import settings
 from backend.app.core.security import (
     hash_password,
     verify_password,
@@ -42,6 +43,8 @@ from backend.app.core.rate_limit import auth_rate_limiter
 
 @pytest.fixture(scope="module")
 def db_engine():
+    orig_smtp = settings.smtp_enabled
+    settings.smtp_enabled = False
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -53,6 +56,7 @@ def db_engine():
         seed_default_rules(db)
     yield engine
     Base.metadata.drop_all(bind=engine)
+    settings.smtp_enabled = orig_smtp
 
 
 @pytest.fixture

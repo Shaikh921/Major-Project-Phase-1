@@ -7,9 +7,15 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", ".."))
 ZIP_PATH = os.path.join(BASE_DIR, "AIClusterKPI.zip")
 SCALER_PATH = os.path.join(BASE_DIR, "scaler.joblib")
-FEATURE_LIST_PATH = os.path.join(BASE_DIR, "selected_features.json")
+MODELS_SCALER_PATH = os.path.join(ROOT_DIR, "models", "scaler.joblib")
+FEATURE_LIST_PATH = (
+    os.path.join(BASE_DIR, "selected_features.json")
+    if os.path.exists(os.path.join(BASE_DIR, "selected_features.json"))
+    else os.path.join(ROOT_DIR, "models", "selected_features.json")
+)
 
 print("=" * 70)
 print(" STEP 6: DATA PREPROCESSING & FEATURE SCALING (StandardScaler) ")
@@ -21,10 +27,17 @@ with open(FEATURE_LIST_PATH, "r") as f:
 feature_cols = feature_meta["features"]
 
 # 2. Load raw datasets
-with zipfile.ZipFile(ZIP_PATH, "r") as zip_ref:
-    train1 = pd.read_csv(zip_ref.open("train1.csv"))
-    train2 = pd.read_csv(zip_ref.open("train2.csv"))
-    test = pd.read_csv(zip_ref.open("test.csv"))
+if os.path.exists(os.path.join(ROOT_DIR, "data", "train1.csv")):
+    train1 = pd.read_csv(os.path.join(ROOT_DIR, "data", "train1.csv"))
+    train2 = pd.read_csv(os.path.join(ROOT_DIR, "data", "train2.csv"))
+    test = pd.read_csv(os.path.join(ROOT_DIR, "data", "test.csv"))
+elif os.path.exists(ZIP_PATH):
+    with zipfile.ZipFile(ZIP_PATH, "r") as zip_ref:
+        train1 = pd.read_csv(zip_ref.open("train1.csv"))
+        train2 = pd.read_csv(zip_ref.open("train2.csv"))
+        test = pd.read_csv(zip_ref.open("test.csv"))
+else:
+    raise FileNotFoundError("Could not find train1.csv or AIClusterKPI.zip")
 
 train1["timestamp"] = pd.to_datetime(train1["timestamp"])
 train2["timestamp"] = pd.to_datetime(train2["timestamp"])
@@ -68,8 +81,13 @@ print(f"   - Training set: Mean across features ~ {np.mean(scaled_train_mean):.4
 print(f"   - Test set:     Mean across features ~ {np.mean(scaled_test_mean):.4f}, Std ~ {np.mean(scaled_test_std):.4f}")
 
 # 7. Save fitted scaler to disk
+LSTM_SCALER_PATH = os.path.join(ROOT_DIR, "models", "lstm", "scaler.joblib")
+os.makedirs(os.path.dirname(LSTM_SCALER_PATH), exist_ok=True)
+
 joblib.dump(scaler, SCALER_PATH)
-print(f"\n[4] Fitted scaler saved successfully to: {SCALER_PATH}")
+joblib.dump(scaler, MODELS_SCALER_PATH)
+joblib.dump(scaler, LSTM_SCALER_PATH)
+print(f"\n[4] Fitted scaler saved successfully to:\n   - {SCALER_PATH}\n   - {MODELS_SCALER_PATH}\n   - {LSTM_SCALER_PATH}")
 
 # 8. Check for any NaNs or Infs introduced during scaling
 print(f"\n[5] Numerical Integrity Check:")

@@ -120,15 +120,15 @@ def seed_baseline_telemetry_if_empty(db: Session) -> None:
     if existing_host is None:
         now = datetime.now(timezone.utc)
         sample_hosts = [
-            ("prod-api-01", "10.0.1.12", "production", "c5.2xlarge", "simulation", "synthetic"),
-            ("prod-api-02", "10.0.1.13", "production", "c5.2xlarge", "simulation", "synthetic"),
-            ("prod-db-primary", "10.0.2.5", "production", "r5.xlarge", "simulation", "synthetic"),
-            ("staging-worker-01", "10.0.3.18", "staging", "t3.xlarge", "simulation", "synthetic"),
-            ("dev-sandbox-01", "10.0.4.99", "development", "t3.medium", "simulation", "synthetic"),
+            ("prod-api-01", "10.0.1.12", "production", "c5.2xlarge", "simulation", "synthetic", "irafanshaikh505@gmail.com"),
+            ("prod-api-02", "10.0.1.13", "production", "c5.2xlarge", "simulation", "synthetic", "irafanshaikh505@gmail.com"),
+            ("prod-db-primary", "10.0.2.5", "production", "r5.xlarge", "simulation", "synthetic", "projectinengineering@gmail.com"),
+            ("staging-worker-01", "10.0.3.18", "staging", "t3.xlarge", "simulation", "synthetic", "mrirfanshaikh0777@gmail.com"),
+            ("dev-sandbox-01", "10.0.4.99", "development", "t3.medium", "simulation", "synthetic", "mrirfanshaikh0777@gmail.com"),
         ]
         
         host_objs = []
-        for name, ip, env, itype, prov, reg in sample_hosts:
+        for name, ip, env, itype, prov, reg, owner in sample_hosts:
             h = Host(
                 hostname=name,
                 ip_address=ip,
@@ -137,10 +137,9 @@ def seed_baseline_telemetry_if_empty(db: Session) -> None:
                 provider=prov,
                 region=reg,
                 source_type="SIMULATED",
-                status="healthy",
+                owner_email=owner,
                 is_active=True,
                 created_at=now - timedelta(days=7),
-                last_seen=now,
             )
             db.add(h)
             host_objs.append(h)
@@ -192,7 +191,7 @@ def seed_baseline_telemetry_if_empty(db: Session) -> None:
 
 def migrate_schema_if_needed() -> None:
     """
-    Safely checks and adds missing columns (such as source_type) to existing SQLite tables
+    Safely checks and adds missing columns (such as source_type, owner_email) to existing SQLite tables
     without destructive drops or data loss.
     """
     from sqlalchemy import text
@@ -205,9 +204,15 @@ def migrate_schema_if_needed() -> None:
                 conn.execute(text("ALTER TABLE hosts ADD COLUMN source_type VARCHAR(50) DEFAULT 'UNKNOWN'"))
                 conn.commit()
 
-            # Classify known existing hosts if any are UNKNOWN
-            conn.execute(text("UPDATE hosts SET source_type = 'REAL_AGENT' WHERE (hostname LIKE 'DESKTOP%' OR environment = 'local') AND (source_type IS NULL OR source_type = 'UNKNOWN')"))
-            conn.execute(text("UPDATE hosts SET source_type = 'SIMULATED', provider = 'simulation', region = 'synthetic' WHERE (hostname LIKE 'prod-%' OR hostname LIKE 'staging-%' OR hostname LIKE 'dev-%') AND (source_type IS NULL OR source_type = 'UNKNOWN')"))
+            if columns and "owner_email" not in columns:
+                conn.execute(text("ALTER TABLE hosts ADD COLUMN owner_email VARCHAR(255)"))
+                conn.commit()
+
+            # Associate host owner emails
+            conn.execute(text("UPDATE hosts SET owner_email = 'irafanshaikh505@gmail.com' WHERE (hostname LIKE 'prod-api%' OR hostname LIKE 'DESKTOP%' OR environment = 'local')"))
+            conn.execute(text("UPDATE hosts SET owner_email = 'projectinengineering@gmail.com' WHERE (hostname LIKE 'prod-db%' OR hostname LIKE '%db%')"))
+            conn.execute(text("UPDATE hosts SET owner_email = 'mrirfanshaikh0777@gmail.com' WHERE (hostname LIKE 'staging%' OR hostname LIKE 'dev-%')"))
+            conn.execute(text("UPDATE hosts SET owner_email = 'irafanshaikh505@gmail.com' WHERE owner_email IS NULL"))
             conn.commit()
         except Exception as e:
             # Table might not exist yet before create_all
@@ -224,12 +229,23 @@ def init_db() -> None:
         seed_pricing_catalog(db)
         seed_baseline_telemetry_if_empty(db)
 
-        # Optional environment-based admin bootstrap if configured and zero super admins exist
+        # Ensure configured bootstrap super admin account exists with updated credentials
         if settings.bootstrap_admin_email and settings.bootstrap_admin_password:
-            existing_super = db.scalar(select(User).where(User.role == UserRole.SUPER_ADMIN).limit(1))
-            if existing_super is None:
-                create_bootstrap_admin(
-                    db=db,
-                    email=settings.bootstrap_admin_email,
-                    password=settings.bootstrap_admin_password,
+            from backend.app.core.security import hash_password
+            super_user = db.scalar(select(User).where(User.email == settings.bootstrap_admin_email.strip().lower()))
+            if super_user:
+                super_user.role = UserRole.SUPER_ADMIN
+                super_user.password_hash = hash_password(settings.bootstrap_admin_password)
+                super_user.is_active = True
+                super_user.is_verified = True
+                db.commit()
+            else:
+                super_user = User(
+                    email=settings.bootstrap_admin_email.strip().lower(),
+                    password_hash=hash_password(settings.bootstrap_admin_password),
+                    role=UserRole.SUPER_ADMIN,
+                    is_active=True,
+                    is_verified=True,
                 )
+                db.add(super_user)
+                db.commit()

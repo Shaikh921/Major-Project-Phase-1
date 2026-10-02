@@ -18,13 +18,13 @@ from backend.app.schemas.summary import HostStatusSummary, FleetSummaryResponse
 from backend.app.schemas.alert import AlertRead
 from backend.app.services.host_service import get_or_create_host, get_hosts, get_host
 from backend.app.services.alert_service import evaluate_metric_sample
-from backend.app.services.ai_service import evaluate_and_record_ai_anomaly
+from backend.app.services.ai_service import evaluate_and_record_ai_anomaly, evaluate_correlated_anomaly
 
 
 def ingest_metric(db: Session, metric_in: MetricCreate) -> Tuple[Metric, List[Alert]]:
     """
     Ingests a single metric sample, auto-discovers/registers the host if unknown,
-    and runs both static threshold and AI multivariate anomaly evaluation engines.
+    and runs static threshold, AI multivariate anomaly, and 3-model correlated consensus evaluation.
     """
     # Auto-discover or update host (M1-FR2)
     host = get_or_create_host(
@@ -35,6 +35,7 @@ def ingest_metric(db: Session, metric_in: MetricCreate) -> Tuple[Metric, List[Al
         provider=metric_in.provider,
         region=metric_in.region,
         source_type=metric_in.source_type or "UNKNOWN",
+        owner_email=metric_in.owner_email,
     )
 
     sample_ts = metric_in.timestamp or datetime.now(timezone.utc)
@@ -60,6 +61,11 @@ def ingest_metric(db: Session, metric_in: MetricCreate) -> Tuple[Metric, List[Al
     ai_alert = evaluate_and_record_ai_anomaly(db, host, metric)
     if ai_alert:
         alerts.append(ai_alert)
+
+    # Trigger 3-Model Correlated Incident Evaluation (Threshold + Isolation Forest + LSTM)
+    corr_alert = evaluate_correlated_anomaly(db, host, metric)
+    if corr_alert:
+        alerts.append(corr_alert)
 
     return metric, alerts
 

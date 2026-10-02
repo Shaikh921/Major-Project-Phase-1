@@ -36,6 +36,7 @@ from backend.app.templates.email_templates import (
     get_password_reset_email,
     get_critical_alert_email,
     get_smtp_test_email,
+    get_correlated_anomaly_email,
 )
 
 logger = logging.getLogger("cloudops.email_service")
@@ -196,6 +197,8 @@ class EmailService:
         if not settings.smtp_enabled:
             record = {
                 "to": to_email,
+                "to_email": to_email,
+                "recipient": to_email,
                 "subject": subject,
                 "html": html_content,
                 "body": text_content,
@@ -412,6 +415,56 @@ class EmailService:
                 "host_name": host_name,
                 "metric": metric,
                 "value": value,
+            },
+        )
+
+    @classmethod
+    def send_correlated_anomaly_notification(
+        cls,
+        recipient_email: str,
+        alert_id: int,
+        host_name: str,
+        ip_address: Optional[str],
+        environment: str,
+        metric_name: str,
+        metric_value: float,
+        threshold_value: float,
+        iso_score: float,
+        lstm_score: float,
+        lstm_threshold: float,
+        explanation: str,
+        timestamp: Optional[datetime] = None,
+    ) -> bool:
+        """
+        Dispatches multi-model correlated anomaly incident alert (Threshold + Isolation Forest + LSTM).
+        """
+        subject, html_content, text_content = get_correlated_anomaly_email(
+            alert_id=alert_id,
+            host_name=host_name,
+            ip_address=ip_address,
+            environment=environment,
+            metric_name=metric_name,
+            metric_value=metric_value,
+            threshold_value=threshold_value,
+            iso_score=iso_score,
+            lstm_score=lstm_score,
+            lstm_threshold=lstm_threshold,
+            explanation=explanation,
+            timestamp=timestamp,
+        )
+        return cls._dispatch(
+            to_email=recipient_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            msg_metadata={
+                "type": "CORRELATED_ANOMALY_ALERT",
+                "alert_id": alert_id,
+                "host_name": host_name,
+                "metric": metric_name,
+                "value": metric_value,
+                "iso_score": iso_score,
+                "lstm_score": lstm_score,
             },
         )
 

@@ -13,6 +13,9 @@ from sqlalchemy.orm import Session
 from backend.app.models.host import Host
 from backend.app.models.metric import Metric
 from backend.app.models.alert import Alert, AlertFeedback
+from backend.app.models.user import User, UserRole
+from backend.app.core.config import settings
+from backend.app.services.email_service import EmailService
 from backend.app.schemas.ai import (
     AnomalyScoreRequest,
     AnomalyScoreResponse,
@@ -26,6 +29,7 @@ from backend.app.schemas.ai import (
 )
 from backend.app.services.host_service import get_host
 from ai_engine.anomaly_detector import MultivariateAnomalyDetector
+from ai_engine.lstm_detector import LSTMAutoencoderAnomalyDetector
 from ai_engine.forecaster import TimeSeriesForecaster
 from ai_engine.model_registry import ModelRegistry
 
@@ -37,6 +41,8 @@ if _global_detector is None:
 if _global_detector is None:
     _global_detector = MultivariateAnomalyDetector()
 
+_global_lstm_detector: Optional[LSTMAutoencoderAnomalyDetector] = LSTMAutoencoderAnomalyDetector()
+
 
 def get_global_detector() -> MultivariateAnomalyDetector:
     """Returns the active cached multivariate anomaly detector instance."""
@@ -44,14 +50,23 @@ def get_global_detector() -> MultivariateAnomalyDetector:
     return _global_detector
 
 
+def get_global_lstm_detector() -> LSTMAutoencoderAnomalyDetector:
+    """Returns the active cached LSTM Autoencoder anomaly detector instance."""
+    global _global_lstm_detector
+    if _global_lstm_detector is None:
+        _global_lstm_detector = LSTMAutoencoderAnomalyDetector()
+    return _global_lstm_detector
+
+
 def reset_global_detector() -> None:
     """Resets the in-memory global detector state (useful for test isolation)."""
-    global _global_detector
+    global _global_detector, _global_lstm_detector
     _global_detector = _registry.load_model("fleet_anomaly_detector", version="v1")
     if _global_detector is None:
         _global_detector = _registry.load_model("production_cloud_anomaly_model", version="v1")
     if _global_detector is None:
         _global_detector = MultivariateAnomalyDetector()
+    _global_lstm_detector = LSTMAutoencoderAnomalyDetector()
 
 
 def train_anomaly_model(db: Session, req: ModelTrainRequest) -> ModelTrainResponse:
@@ -208,6 +223,176 @@ def evaluate_and_record_ai_anomaly(
         db.add(new_alert)
         db.commit()
         db.refresh(new_alert)
+        return new_alert
+
+
+def _dispatch_correlated_alert_notifications(
+    db: Session,
+    alert: Alert,
+    host: Host,
+    metric: Metric,
+    iso_res: Dict[str, Any],
+    lstm_res: Dict[str, Any],
+) -> None:
+    """
+    Dispatches correlated incident notification to Super Admins and the email associated with the host.
+    """
+    if not settings.notify_on_critical_alerts and settings.smtp_enabled:
+        return
+
+    recipients = set()
+
+    # 1. Super Admins
+    super_admins = db.scalars(
+        select(User.email).where(
+            User.role == UserRole.SUPER_ADMIN,
+            User.is_active == True,
+        )
+    ).all()
+    for sa in super_admins:
+        if sa:
+            recipients.add(sa)
+
+    # 2. Host associated email (direct owner_email or tags lookup)
+    host_owner = getattr(host, "owner_email", None)
+    if not host_owner and host.tags and isinstance(host.tags, dict):
+        host_owner = host.tags.get("owner_email") or host.tags.get("contact_email")
+    if host_owner:
+        recipients.add(host_owner)
+
+    iso_score = float(iso_res.get("anomaly_score", 0.0))
+    lstm_score = float(lstm_res.get("reconstruction_error", 0.0))
+    lstm_threshold = float(lstm_res.get("operating_threshold", 0.79135))
+    explanation = iso_res.get("explanation") or "Consensus anomaly flagged across Isolation Forest & LSTM sequence detector."
+
+    for recipient in recipients:
+        EmailService.send_correlated_anomaly_notification(
+            recipient_email=recipient,
+            alert_id=alert.id,
+            host_name=host.hostname,
+            ip_address=host.ip_address,
+            environment=host.environment,
+            metric_name=alert.metric,
+            metric_value=float(getattr(metric, alert.metric, metric.cpu_percent)),
+            threshold_value=alert.threshold or 80.0,
+            iso_score=iso_score,
+            lstm_score=lstm_score,
+            lstm_threshold=lstm_threshold,
+            explanation=explanation,
+            timestamp=alert.created_at,
+        )
+
+
+def evaluate_correlated_anomaly(
+    db: Session,
+    host: Host,
+    metric: Metric,
+) -> Optional[Alert]:
+    """
+    Evaluates 3-tier correlated anomaly detection:
+    1. Resource utilization is higher than safe threshold (CPU >= 80%, RAM >= 85%, or Disk >= 85%).
+    2. Isolation Forest multivariate model predicts anomaly.
+    3. LSTM Autoencoder temporal sequence model predicts anomaly.
+    
+    When all 3 conditions are met, creates/updates a critical correlated alert and dispatches
+    high-priority email notifications to Super Admins and the host-associated contact email.
+    """
+    # 1. Condition: Check if resource usage exceeds operational thresholds
+    has_high_resource_usage = (
+        metric.cpu_percent >= 80.0
+        or metric.memory_percent >= 85.0
+        or metric.disk_percent >= 85.0
+    )
+    if not has_high_resource_usage:
+        return None
+
+    # 2. Condition: Isolation Forest Anomaly Detection
+    detector = get_global_detector()
+    sample_dict = {
+        "cpu_percent": metric.cpu_percent,
+        "memory_percent": metric.memory_percent,
+        "disk_percent": metric.disk_percent,
+        "network_sent_mb": metric.network_sent_mb,
+        "network_received_mb": metric.network_received_mb,
+    }
+    iso_res = detector.score_sample(sample_dict)
+    if not iso_res.get("is_anomaly"):
+        return None
+
+    # 3. Condition: LSTM Autoencoder Sequence Anomaly Detection
+    recent_metrics_stmt = (
+        select(Metric)
+        .where(Metric.host_id == host.id)
+        .order_by(desc(Metric.timestamp))
+        .limit(15)
+    )
+    recent_records = list(db.scalars(recent_metrics_stmt).all())
+    recent_records.reverse()
+
+    metric_dicts = [
+        {
+            "cpu_percent": r.cpu_percent,
+            "memory_percent": r.memory_percent,
+            "disk_percent": r.disk_percent,
+            "network_sent_mb": r.network_sent_mb,
+            "network_received_mb": r.network_received_mb,
+        }
+        for r in recent_records
+    ]
+    if not metric_dicts:
+        metric_dicts = [sample_dict]
+
+    lstm_detector = get_global_lstm_detector()
+    lstm_res = lstm_detector.predict_window(metric_dicts)
+    if not lstm_res.get("is_anomaly"):
+        return None
+
+    # All 3 conditions triggered: Create or update correlated alert
+    top_feature = (
+        iso_res["feature_contributions"][0]["metric"]
+        if iso_res.get("feature_contributions")
+        else "cpu_percent"
+    )
+
+    existing_stmt = select(Alert).where(
+        Alert.host_id == host.id,
+        Alert.kind == "correlated_anomaly",
+        Alert.status.in_(["active", "acknowledged"]),
+    )
+    existing_alert = db.scalar(existing_stmt)
+
+    msg = (
+        f"CRITICAL CORRELATED INCIDENT: High resource usage confirmed anomalous by both "
+        f"Isolation Forest (Score: {iso_res['anomaly_score']:.2f}) and LSTM Autoencoder "
+        f"(MSE: {lstm_res['reconstruction_error']:.4f}, Threshold: {lstm_res['operating_threshold']:.4f})."
+    )
+
+    if existing_alert:
+        existing_alert.value = iso_res["anomaly_score"]
+        existing_alert.severity = "critical"
+        existing_alert.message = msg
+        existing_alert.metric = top_feature
+        db.commit()
+        db.refresh(existing_alert)
+        return existing_alert
+    else:
+        new_alert = Alert(
+            host_id=host.id,
+            metric=top_feature,
+            kind="correlated_anomaly",
+            severity="critical",
+            message=msg,
+            value=iso_res["anomaly_score"],
+            threshold=0.60,
+            status="active",
+            created_at=metric.timestamp or datetime.now(timezone.utc),
+        )
+        db.add(new_alert)
+        db.commit()
+        db.refresh(new_alert)
+
+        # Dispatch email notifications
+        _dispatch_correlated_alert_notifications(db, new_alert, host, metric, iso_res, lstm_res)
         return new_alert
 
 

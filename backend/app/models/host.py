@@ -55,6 +55,11 @@ class Host(Base):
         default=True,
         nullable=False,
     )
+    owner_email: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        index=True,
+    )
     tags: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True, default=dict)
     
     created_at: Mapped[datetime] = mapped_column(
