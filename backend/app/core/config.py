@@ -1,4 +1,17 @@
+import logging
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger("cloudops.config")
+
+KNOWN_INSECURE_DEFAULT_SECRETS = {
+    "cloudops-intel-secure-jwt-hmac-sha256-default-key-production-change-me",
+    "secret",
+    "changeme",
+    "default-secret",
+    "your-secret-key-here",
+    "jwt-secret-key",
+}
 
 
 class Settings(BaseSettings):
@@ -18,6 +31,7 @@ class Settings(BaseSettings):
 
     # Security & Auth
     secret_key: str = "cloudops-intel-secure-jwt-hmac-sha256-default-key-production-change-me"
+    agent_ingestion_key: str = ""
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
@@ -80,6 +94,33 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",
     )
+
+    @model_validator(mode="after")
+    def validate_production_security(self) -> "Settings":
+        env = (self.environment or "").strip().lower()
+        app_env = (self.app_env or "").strip().lower()
+        is_production = env in ("production", "prod") or app_env in ("production", "prod")
+
+        if is_production:
+            if not self.secret_key or self.secret_key.strip() in KNOWN_INSECURE_DEFAULT_SECRETS:
+                raise ValueError(
+                    "Production Security Error: Insecure or default SECRET_KEY detected. "
+                    "Production deployments must configure a unique, cryptographically strong SECRET_KEY "
+                    "via environment variable or .env file (e.g. generated via 'openssl rand -hex 32')."
+                )
+            if len(self.secret_key.strip()) < 32:
+                raise ValueError(
+                    "Production Security Error: SECRET_KEY is too short. "
+                    "Production HMAC-SHA256 signing keys must be at least 32 characters long."
+                )
+        else:
+            if self.secret_key in KNOWN_INSECURE_DEFAULT_SECRETS:
+                logger.warning(
+                    "[SECURITY WARNING] Using default or non-production SECRET_KEY. "
+                    "This is permitted only in local development and test environments."
+                )
+
+        return self
 
 
 settings = Settings()

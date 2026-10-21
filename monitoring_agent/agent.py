@@ -33,13 +33,15 @@ class MonitoringAgent:
         environment: str = "local",
         provider: str = "bare-metal",
         region: str = "local",
+        api_key: Optional[str] = None,
     ):
         self.collector = SystemCollector()
-        self.buffer = MetricBuffer(ingest_url=server_url)
+        self.buffer = MetricBuffer(ingest_url=server_url, api_key=api_key)
         self.interval = interval
         self.environment = environment
         self.provider = provider
         self.region = region
+        self.api_key = api_key
         self._running = False
 
     def start(self, max_cycles: Optional[int] = None) -> None:
@@ -103,6 +105,11 @@ def main():
     parser.add_argument("--env", default=os.getenv("APP_ENV", "local"), help="Environment name")
     parser.add_argument("--provider", default=os.getenv("CLOUD_PROVIDER", "bare-metal"), help="Cloud provider")
     parser.add_argument("--region", default=os.getenv("CLOUD_REGION", "local"), help="Cloud region")
+    parser.add_argument(
+        "--api-key",
+        default=os.getenv("AGENT_API_KEY", os.getenv("AGENT_INGESTION_KEY", "")),
+        help="Agent ingestion API key (or set AGENT_API_KEY / AGENT_INGESTION_KEY env var)",
+    )
 
     args = parser.parse_args()
 
@@ -112,6 +119,7 @@ def main():
         environment=args.env,
         provider=args.provider,
         region=args.region,
+        api_key=args.api_key,
     )
     agent.start()
 

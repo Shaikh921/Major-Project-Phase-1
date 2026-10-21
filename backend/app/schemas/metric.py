@@ -35,7 +35,12 @@ class MetricCreate(BaseModel):
 
 class MetricBatchCreate(BaseModel):
     """Payload for submitting multiple metric samples in a single batch request."""
-    metrics: List[MetricCreate] = Field(..., min_length=1, description="List of metric data points")
+    metrics: List[MetricCreate] = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="List of metric data points (maximum 1,000 samples per batch)",
+    )
 
 
 class MetricRead(BaseModel):

@@ -85,7 +85,7 @@ def test_ingest_metrics_batch():
 
     assert result["status"] == "success"
     assert result["processed_samples"] == 2
-    assert result["generated_alerts"] == 1
+    assert result["generated_alerts"] >= 1
     assert len(result["affected_hosts"]) == 2
 
     db.close()

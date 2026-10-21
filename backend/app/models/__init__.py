@@ -18,6 +18,8 @@ from backend.app.models.user import (
     AdminRequestStatus,
 )
 
+from backend.app.models.agent_key import AgentApiKey
+
 __all__ = [
     "Host",
     "Metric",
@@ -36,4 +38,5 @@ __all__ = [
     "AdminRegistrationRequest",
     "AdminActivationToken",
     "AdminRequestStatus",
+    "AgentApiKey",
 ]

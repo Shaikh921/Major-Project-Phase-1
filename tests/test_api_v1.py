@@ -42,7 +42,6 @@ def setup_v1_test_database():
     app.dependency_overrides[get_current_operator] = lambda: mock_admin
     app.dependency_overrides[get_current_admin] = lambda: mock_admin
     yield
-    app.dependency_overrides.pop(get_db, None)
     app.dependency_overrides.pop(get_current_viewer, None)
     app.dependency_overrides.pop(get_current_operator, None)
     app.dependency_overrides.pop(get_current_admin, None)
@@ -94,9 +93,11 @@ def test_metrics_and_summary_flow(client):
     # 1. Submit metric
     res = client.post(
         "/api/v1/metrics",
+        headers={"X-Agent-Key": "test-agent-key-fixture-secret-2026"},
         json={
             "hostname": "live-stream-host",
             "ip_address": "192.168.1.55",
+            "source_type": "REAL_AGENT",
             "cpu_percent": 88.5,  # Breaches warning threshold (>=80%)
             "memory_percent": 65.0,
             "disk_percent": 50.0,

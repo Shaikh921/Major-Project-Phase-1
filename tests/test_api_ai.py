@@ -18,8 +18,16 @@ from backend.app.schemas.metric import MetricCreate
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_ai_test_database():
-    """Sets up an isolated in-memory SQLite database for AI endpoint tests."""
+def setup_ai_test_database(tmp_path_factory):
+    """Sets up an isolated in-memory SQLite database and isolated models directory for AI endpoint tests."""
+    temp_dir = str(tmp_path_factory.mktemp("models"))
+    from backend.app.services.ai_service import _registry
+    from pathlib import Path
+    orig_models_dir = _registry.models_dir
+    orig_meta_file = _registry.metadata_file
+    _registry.models_dir = Path(temp_dir)
+    _registry.metadata_file = Path(temp_dir) / "registry_metadata.json"
+
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -58,13 +66,14 @@ def setup_ai_test_database():
     app.dependency_overrides[get_current_operator] = lambda: mock_admin
     app.dependency_overrides[get_current_admin] = lambda: mock_admin
     yield
-    app.dependency_overrides.pop(get_db, None)
     app.dependency_overrides.pop(get_current_viewer, None)
     app.dependency_overrides.pop(get_current_operator, None)
     app.dependency_overrides.pop(get_current_admin, None)
     Base.metadata.drop_all(bind=engine)
     from backend.app.services.ai_service import reset_global_detector
     reset_global_detector()
+    _registry.models_dir = orig_models_dir
+    _registry.metadata_file = orig_meta_file
 
 
 @pytest.fixture(scope="module")

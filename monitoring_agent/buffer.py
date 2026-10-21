@@ -21,9 +21,10 @@ class MetricBuffer:
         ingest_url: Target REST endpoint (e.g. http://localhost:8000/api/v1/metrics).
     """
 
-    def __init__(self, ingest_url: str, max_size: int = 5000):
+    def __init__(self, ingest_url: str, max_size: int = 5000, api_key: Optional[str] = None):
         self.ingest_url = ingest_url
         self.max_size = max_size
+        self.api_key = api_key
         self._buffer = collections.deque(maxlen=max_size)
         self._lock = threading.Lock()
         self._consecutive_failures = 0
@@ -43,8 +44,8 @@ class MetricBuffer:
 
     def flush(self, timeout: float = 3.0) -> bool:
         """
-        Attempts to transmit all queued metric samples to the backend.
-        Uses batch ingestion if multiple samples are queued.
+        Attempts to transmit queued metric samples to the backend.
+        Sends up to 1,000 samples per request to conform to backend batch limits.
         
         Returns:
             True if transmission was successful, False if network/HTTP error occurred.
@@ -52,16 +53,26 @@ class MetricBuffer:
         with self._lock:
             if not self._buffer:
                 return True
-            # Extract current backlog
-            items_to_send = list(self._buffer)
+            # Extract up to 1,000 items from backlog to respect batch ingestion limit
+            items_to_send = list(self._buffer)[:1000]
+
+        headers: Dict[str, str] = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["X-Agent-Key"] = self.api_key
 
         try:
             if len(items_to_send) == 1:
-                response = requests.post(self.ingest_url, json=items_to_send[0], timeout=timeout)
+                response = requests.post(
+                    self.ingest_url,
+                    json=items_to_send[0],
+                    headers=headers,
+                    timeout=timeout,
+                )
             else:
                 response = requests.post(
                     self.ingest_url,
                     json={"metrics": items_to_send},
+                    headers=headers,
                     timeout=timeout,
                 )
 

@@ -7,6 +7,7 @@ and disk exhaustion to test dashboard rendering and alert deduplication engines.
 """
 
 import argparse
+import os
 import random
 import time
 from datetime import datetime, timezone
@@ -61,9 +62,10 @@ class FleetSimulator:
     Simulates a multi-node infrastructure fleet.
     """
 
-    def __init__(self, target_url: str = "http://localhost:8000/api/v1/metrics", fleet=None):
+    def __init__(self, target_url: str = "http://localhost:8000/api/v1/metrics", fleet=None, api_key: str = None):
         self.target_url = target_url
         self.fleet = fleet or DEFAULT_FLEET
+        self.api_key = api_key
         self.states = {
             h["hostname"]: {
                 "step": 0,
@@ -137,6 +139,10 @@ class FleetSimulator:
         """
         print(f"[*] Starting Fleet Simulator for {len(self.fleet)} hosts -> {self.target_url}")
         count = 0
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["X-Agent-Key"] = self.api_key
+
         try:
             while True:
                 batch = [self.generate_sample(h) for h in self.fleet]
@@ -144,6 +150,7 @@ class FleetSimulator:
                     res = requests.post(
                         self.target_url,
                         json={"metrics": batch},
+                        headers=headers,
                         timeout=5.0,
                     )
                     if res.status_code in [200, 201]:
@@ -170,9 +177,14 @@ def main():
     parser.add_argument("--url", default="http://localhost:8000/api/v1/metrics", help="Metrics ingestion URL")
     parser.add_argument("--interval", type=int, default=5, help="Seconds between cycles")
     parser.add_argument("--iterations", type=int, default=0, help="Total iterations (0 = endless)")
+    parser.add_argument(
+        "--api-key",
+        default=os.getenv("AGENT_API_KEY", os.getenv("AGENT_INGESTION_KEY", "")),
+        help="Agent ingestion API key (or set AGENT_API_KEY / AGENT_INGESTION_KEY env var)",
+    )
 
     args = parser.parse_args()
-    sim = FleetSimulator(target_url=args.url)
+    sim = FleetSimulator(target_url=args.url, api_key=args.api_key)
     sim.run(interval=args.interval, iterations=args.iterations)
 
 

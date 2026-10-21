@@ -20,6 +20,7 @@ from backend.app.models.alert import AlertRule, Alert, AlertFeedback
 from backend.app.models.security import SecurityEvent, AuditLog
 from backend.app.models.cost import PricingCatalog, CostRecommendation
 from backend.app.models.user import User, UserSession, EmailVerificationToken, PasswordResetToken, UserRole
+from backend.app.models.agent_key import AgentApiKey
 from backend.app.core.config import settings
 from backend.app.services.auth_service import create_bootstrap_admin
 from cost_engine.calculator import STANDARD_PRICING_CATALOG

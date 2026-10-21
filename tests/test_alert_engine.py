@@ -53,13 +53,15 @@ def test_alert_threshold_breach_and_deduplication():
             disk_percent=30.0,
         ),
     )
-    assert len(alerts1) == 1
-    alert_id = alerts1[0].id
-    assert alerts1[0].status == "active"
-    assert alerts1[0].severity == "warning"
+    assert len(alerts1) >= 1
+    threshold_alerts1 = [a for a in alerts1 if a.kind == "threshold"]
+    assert len(threshold_alerts1) == 1
+    alert_id = threshold_alerts1[0].id
+    assert threshold_alerts1[0].status == "active"
+    assert threshold_alerts1[0].severity == "warning"
 
-    # Verify 1 active alert in DB
-    all_alerts = get_alerts(db, status="active")
+    # Verify 1 active threshold alert in DB
+    all_alerts = [a for a in get_alerts(db, status="active") if a.kind == "threshold"]
     assert len(all_alerts) == 1
 
     # 2. Second sample still high CPU (92%)
@@ -72,8 +74,8 @@ def test_alert_threshold_breach_and_deduplication():
             disk_percent=30.0,
         ),
     )
-    # Deduplication check: Same alert record updated, count remains 1
-    all_alerts_after = get_alerts(db, status="active")
+    # Deduplication check: Same threshold alert record updated, count remains 1
+    all_alerts_after = [a for a in get_alerts(db, status="active") if a.kind == "threshold"]
     assert len(all_alerts_after) == 1
     assert all_alerts_after[0].id == alert_id
     assert all_alerts_after[0].value == 92.0
@@ -111,11 +113,11 @@ def test_alert_auto_resolution():
         ),
     )
 
-    # Active alerts should now be 0, and the previous alert resolved
-    active_alerts_after = get_alerts(db, status="active")
-    assert len(active_alerts_after) == 0
+    # Active threshold alerts should now be 0, and the previous alert resolved
+    active_threshold_alerts = [a for a in get_alerts(db, status="active") if a.kind == "threshold"]
+    assert len(active_threshold_alerts) == 0
 
-    resolved_alerts = get_alerts(db, status="resolved")
+    resolved_alerts = [a for a in get_alerts(db, status="resolved") if a.kind == "threshold"]
     assert len(resolved_alerts) >= 1
     assert resolved_alerts[0].resolved_at is not None
 

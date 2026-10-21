@@ -80,3 +80,9 @@ Thumbs.db
 htmlcov/
 .pytest_cache/
 .mypy_cache/
+
+# Databases
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
