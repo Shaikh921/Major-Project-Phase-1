@@ -28,11 +28,13 @@ import { renderReportsView } from "./views/ReportsView.js?v=3.3.0";
 import { renderAuditView } from "./views/AuditView.js?v=3.3.0";
 import { renderSettingsView } from "./views/SettingsView.js?v=3.3.0";
 import { renderAdminManagementView } from "./views/AdminManagementView.js?v=3.3.0";
+import { renderLabView, destroyLabView } from "./views/LabView.js?v=3.3.0";
 
 const VIEW_MAP = {
   overview: renderOverviewView,
   resources: renderResourcesView,
   metrics: renderMetricsView,
+  lab: renderLabView,
   anomalies: renderAnomaliesView,
   incidents: renderIncidentsView,
   security: renderSecurityView,
@@ -43,6 +45,7 @@ const VIEW_MAP = {
   settings: renderSettingsView,
   "admin-management": renderAdminManagementView,
 };
+
 
 let pollTimer = null;
 
@@ -210,8 +213,13 @@ function navigateTo(viewKey) {
     viewKey = "overview";
   }
 
+  if (viewKey !== "lab") {
+    destroyLabView();
+  }
+
   const renderFn = VIEW_MAP[viewKey] || renderOverviewView;
   const container = document.getElementById("view-container");
+
   if (!container) return;
 
   // Update Sidebar active state

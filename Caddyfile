@@ -1,0 +1,46 @@
+# ==============================================================================
+# CloudOps Intel — Production & Staging Reverse Proxy Configuration
+# Enforces TLS using Caddy's Internal Certificate Authority
+# ==============================================================================
+
+{
+    # Security: Disable remote administrative API endpoint
+    admin off
+
+    # Prevent automatic unencrypted HTTP redirects; require explicit HTTPS
+    auto_https disable_redirects
+
+    # Persistent Storage: Ensure deterministic CA and certificate persistence
+    storage file_system {
+        root "C:/CLoudProject/data/caddy"
+    }
+}
+
+# ------------------------------------------------------------------------------
+# HTTPS Endpoint: Port 8443 (Loopback and LAN Access)
+# Uses Caddy's Internal CA to automatically issue and manage TLS certificates.
+# SANs: localhost, 127.0.0.1, 10.227.136.246
+# ------------------------------------------------------------------------------
+https://localhost:8443, https://127.0.0.1:8443, https://10.227.136.246:8443, https://:8443 {
+    tls internal
+
+    # Security Headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Reverse proxy all requests to the FastAPI application bound to loopback
+    reverse_proxy 127.0.0.1:8000 {
+        header_up Host {upstream_hostport}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-Proto https
+    }
+
+    # Dedicated Health Check routing
+    handle /health {
+        reverse_proxy 127.0.0.1:8000
+    }
+}

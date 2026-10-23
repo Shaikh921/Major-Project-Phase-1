@@ -57,15 +57,32 @@ DEFAULT_FLEET = [
 ]
 
 
+from monitoring_agent.buffer import validate_transport_security
+
+
 class FleetSimulator:
     """
     Simulates a multi-node infrastructure fleet.
     """
 
-    def __init__(self, target_url: str = "http://localhost:8000/api/v1/metrics", fleet=None, api_key: str = None):
+    def __init__(
+        self,
+        target_url: str = "http://localhost:8000/api/v1/metrics",
+        fleet=None,
+        api_key: str = None,
+        allow_insecure_http: bool = False,
+    ):
         self.target_url = target_url
         self.fleet = fleet or DEFAULT_FLEET
         self.api_key = api_key
+        self.allow_insecure_http = allow_insecure_http or (
+            os.getenv("ALLOW_INSECURE_REMOTE_HTTP", "").lower() in ("true", "1")
+        )
+        validate_transport_security(
+            url=self.target_url,
+            api_key=self.api_key,
+            allow_insecure_http=self.allow_insecure_http,
+        )
         self.states = {
             h["hostname"]: {
                 "step": 0,

@@ -13,15 +13,12 @@ An intelligent, multi-cloud observability, AI-driven anomaly detection, multi-cu
   - [Module 4: Production SMTP & Email Notification System](#module-4-production-smtp--email-notification-system)
 - [📁 Repository Structure](#-repository-structure)
 - [🚀 Quick Start Guide](#-quick-start-guide)
-  - [1. Clone Repository](#1-clone-repository)
-  - [2. Set Up Virtual Environment](#2-set-up-virtual-environment)
-  - [3. Install Dependencies](#3-install-dependencies)
-  - [4. Environment Variables Configuration](#4-environment-variables-configuration)
-  - [5. Bootstrap Initial Super Admin](#5-bootstrap-initial-super-admin)
-  - [6. Run the Application](#6-run-the-application)
+- [🪟 Windows Services & Production Persistence (Phase 8B)](#-windows-services--production-persistence-phase-8b)
+- [🖥️ Step-by-Step Lab PC & Sensor Deployment Guide](#️-step-by-step-lab-pc--sensor-deployment-guide)
 - [🌐 Accessing Services & Dashboard](#-accessing-services--dashboard)
+- [🔒 Network Security & Agent Transport Architecture](#-network-security--agent-transport-architecture)
 - [📧 Email & SMTP Configuration Guide](#-email--smtp-configuration-guide)
-- [🧪 Running Tests & Regression Suite (81 Tests)](#-running-tests--regression-suite-81-tests)
+- [🧪 Running Tests & Regression Suite (149 Tests)](#-running-tests--regression-suite-149-tests)
 - [🐳 Running with Docker](#-running-with-docker)
 - [📄 License](#-license)
 
@@ -195,26 +192,182 @@ Follow the prompts or supply environment defaults to create your administrator c
 
 ---
 
-### 6. Run the Application
+### 6. Run the Application Manually (Development Mode)
 
-Start the FastAPI backend and frontend server:
+If testing or developing locally in the foreground:
 
+#### Step A: Start Uvicorn Backend (Loopback Only)
+Start the FastAPI server listening strictly on `127.0.0.1`:
 ```bash
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+```
+> [!IMPORTANT]
+> Never bind the backend to `0.0.0.0:8000`. Direct plaintext HTTP on port 8000 is intentionally restricted to loopback (`127.0.0.1`) to ensure all network traffic passes through the authenticated HTTPS reverse proxy.
+
+#### Step B: Start Caddy HTTPS Reverse Proxy
+In a separate terminal, launch Caddy:
+```powershell
+.\tools\caddy.exe run --config Caddyfile
+```
+Caddy will automatically generate internal ECC certificates covering `localhost`, `127.0.0.1`, and your LAN IP, listening securely on port `8443`.
+
+---
+
+## 🪟 Windows Services & Production Persistence (Phase 8B)
+
+For staging and enterprise production environments on Windows Server / Windows 10/11, CloudOps Intel runs as resilient background Windows Services managed by the Windows Service Control Manager (SCM) via NSSM, protected by native NTFS Access Control Lists (ACLs).
+
+### 1. Architectural Highlights
+- **Service Isolation**:
+  - `CloudOpsBackend`: Runs Uvicorn under isolated Virtual Service Account `NT SERVICE\CloudOpsBackend`. Bound strictly to `127.0.0.1:8000`.
+  - `CloudOpsProxy`: Runs Caddy under isolated Virtual Service Account `NT SERVICE\CloudOpsProxy`. Listens on public/LAN HTTPS port `8443`.
+- **Hardened Least-Privilege NTFS DACLs**:
+  - `Authenticated Users Modify` permissions stripped across the entire project root.
+  - Cross-service read/write boundaries enforced: `CloudOpsProxy` has zero access to `.env`, SQLite database, or backend source code. `CloudOpsBackend` has zero access to Caddy private keys or proxy logs.
+  - Sidecar write permissions: Targeted `(WD,AD,DC)` and `CREATOR OWNER:(OI)(CI)(IO)(M)` rights allow the backend to create, truncate, checkpoint, and delete SQLite WAL (`-wal`) and shared memory (`-shm`) sidecars without granting broad directory Modify access.
+- **SQLite WAL Mode**:
+  - Write-Ahead Logging (`PRAGMA journal_mode=WAL`) enabled with a 30-second busy timeout (`PRAGMA busy_timeout=30000`) for high concurrency between reader threads, analytical background jobs, and real-time ingestion streams.
+
+### 2. Elevated Installation & Management
+
+#### Install and Harden Services (Run in PowerShell as Administrator):
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install_windows_services.ps1 -StartAfterInstall
+```
+
+#### Service Control Commands:
+```powershell
+# Check status of both services
+sc.exe query CloudOpsBackend
+sc.exe query CloudOpsProxy
+
+# Start services
+net start CloudOpsBackend
+net start CloudOpsProxy
+
+# Stop services
+net stop CloudOpsProxy
+net stop CloudOpsBackend
+```
+
+#### Run Security & ACL Verification Suite:
+```powershell
+python scripts\verify_service_acls.py
+```
+
+#### Safe Uninstallation / Rollback:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\uninstall_windows_services.ps1
 ```
 
 ---
 
-## 🌐 Accessing Services & Dashboard
+## 🖥️ Step-by-Step Lab PC & Sensor Deployment Guide
 
-Once the server is running, open your web browser:
+CloudOps Intel uses a **Hub-and-Spoke** architecture where a Central Server (e.g. Laptop or Server machine) hosts the backend, database, and dashboard, while client computers (e.g. Lab Desktop PCs) run a lightweight sensor daemon that streams live hardware telemetry over your local network.
 
-| Interface | URL | Description |
+```mermaid
+flowchart TD
+    subgraph SENSOR_PC ["Sensor Computer (Lab Desktop PC)"]
+        A[Python Agent: agent.py] -->|Reads Hardware Stats| B[psutil: CPU, RAM, Disk, Net]
+        B -->|Every 5s: JSON Payload| C[MetricBuffer Ring Backlog]
+    end
+
+    subgraph LAN ["Local Area Network (Wi-Fi / Ethernet LAN)"]
+        C -->|Port 8443 Encrypted HTTPS| D
+    end
+
+    subgraph CENTRAL_SERVER ["Central Server (Laptop / Server Host)"]
+        D[CloudOpsProxy: Caddy :8443] -->|Reverse Proxy: 127.0.0.1:8000| E[CloudOpsBackend: FastAPI]
+        E -->|Store Telemetry| F[(cloud_intelligence.db)]
+        E -->|Web Dashboard UI| G[Browser: /dashboard/]
+    end
+
+    subgraph CLIENT_BROWSER ["Administrator Workstation"]
+        H[Chrome / Edge Browser] -->|https://SERVER_IP:8443/dashboard/| D
+    end
+```
+
+### Step 1: Configure Central Server Firewall & Identify IP
+
+1. **Find your Server LAN IP:**
+   Open Command Prompt or PowerShell on the Server machine and run `ipconfig`. Look for your active adapter IPv4 address (for example: `10.227.136.246`).
+2. **Allow Inbound Port 8443 in Windows Firewall:**
+   Open **PowerShell as Administrator** on the Server machine and run:
+   ```powershell
+   netsh advfirewall firewall add rule name="CloudOps 8443" dir=in action=allow protocol=TCP localport=8443
+   ```
+
+### Step 2: Access & Log In to the Central Dashboard
+
+1. From any browser on your network, open:
+   👉 **`https://<SERVER_IP>:8443/dashboard/`** (e.g., `https://10.227.136.246:8443/dashboard/`)
+2. **Bypass Self-Signed Certificate Warning:**
+   Because Caddy issues internal local CA certificates (`tls internal`), your browser will display *"Your connection isn't private"*. Click **Advanced** ➔ **Proceed to \<SERVER_IP\> (unsafe)**.
+3. **Log in with Administrator Credentials:**
+   - **Email:** `s23_shaikh_irafan@mgmcen.ac.in` (or your configured Super Admin email)
+   - **Password:** Your configured password (e.g., `@Shaikh921`)
+
+### Step 3: Prepare the Sensor Computer (Lab PC)
+
+The sensor machine only requires Python and two lightweight libraries — **no database, Node.js, or FastAPI needed**.
+
+1. **Install Python 3.9+** on the sensor computer.
+2. **Install Required Packages:**
+   ```bash
+   pip install psutil requests
+   ```
+3. **Copy Files to Sensor Computer:**
+   Create a folder on the sensor computer (e.g. `Desktop/SensorAgent`) and copy:
+   - The [`monitoring_agent/`](monitoring_agent/) folder from the repository.
+   - The root certificate file [`root.crt`](data/caddy/pki/authorities/local/root.crt) from `C:\CLoudProject\data\caddy\pki\authorities\local\root.crt`.
+
+Folder layout on the sensor computer:
+```text
+Desktop/SensorAgent/
+   ├── monitoring_agent/
+   │     ├── __init__.py
+   │     ├── agent.py
+   │     ├── buffer.py
+   │     └── collector.py
+   └── root.crt
+```
+
+### Step 4: Launch the Sensor Agent
+
+On the sensor computer, open a terminal in the `SensorAgent` folder and run:
+
+```bash
+python -m monitoring_agent.agent --url https://<SERVER_IP>:8443/api/v1/metrics --ca-bundle root.crt --api-key "<YOUR_AGENT_INGESTION_KEY>"
+```
+
+*Example with verified parameters:*
+```bash
+python -m monitoring_agent.agent --url https://10.227.136.246:8443/api/v1/metrics --ca-bundle root.crt --api-key "a7d2e4f8c9b1035e821a4f7d6e3c5b9a1f4d8e2c7b0a3f6e9d1c4b8a2f5e7d3c"
+```
+
+The terminal will begin streaming telemetry every 5 seconds:
+```text
+[*] Starting Monitoring Agent -> Target: https://10.227.136.246:8443/api/v1/metrics | Polling: 5s
+[+] [DESKTOP-OGTK5SI] CPU: 14.2% | MEM: 48.1% | DISK: 55.0% -> Ingested
+```
+
+### Step 5: Verify Live Telemetry in the Dashboard
+
+In your browser at `https://<SERVER_IP>:8443/dashboard/`:
+- **Lab PCs View:** Click **Lab PCs** in the sidebar. The newly connected PC will immediately appear as an active host card showing its real IP address, green **ONLINE** heartbeat status, and live CPU/RAM/Disk gauges.
+- **Infrastructure View:** Click **Infrastructure** to see the host listed with the **REAL_AGENT** provenance badge.
+- **Telemetry Stream View:** Click **Telemetry Stream** to view real-time time-series graphs plotting metric deltas as they arrive from the sensor PC.
+
+### Step 6: Troubleshooting & Common Pitfalls
+
+| Symptom | Root Cause | Resolution |
 | :--- | :--- | :--- |
-| **Web Dashboard** | [http://localhost:8000/](http://localhost:8000/) | SOC / SRE Live Monitoring, Anomaly Center & Admin UI |
-| **Interactive API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger UI for exploring and testing API endpoints |
-| **ReDoc API Reference** | [http://localhost:8000/redoc](http://localhost:8000/redoc) | Alternative structured REST documentation |
-| **Health Check** | [http://localhost:8000/health](http://localhost:8000/health) | Liveness probe endpoint (`{"status": "healthy"}`) |
+| **`400 Bad Request: Client sent an HTTP request to an HTTPS server`** | User typed `http://` instead of `https://` | Always include the `https://` scheme: `https://<SERVER_IP>:8443/dashboard/` |
+| **`Connection Refused` on port 8000** | Attempting to access backend directly from remote PC | Port 8000 is intentionally loopback-only. Connect via port `8443` through Caddy. |
+| **`401 Unauthorized: Missing agent ingestion credentials`** | Agent started without `--api-key` | Supply the valid API key using `--api-key "<KEY>"` or `AGENT_API_KEY` env var. |
+| **`SSLError: certificate verify failed`** | Agent cannot verify Caddy's internal CA | Provide `--ca-bundle root.crt` copied from the server. |
+| **`Request timed out` on ping / connection** | Campus or public Wi-Fi AP Isolation | Public/campus Wi-Fi often blocks device-to-device traffic. Connect both machines to a mobile hotspot or private LAN switch. |
 
 ---
 
@@ -250,7 +403,7 @@ NOTIFY_ON_CRITICAL_ALERTS=true
 
 ---
 
-## 🧪 Running Tests & Regression Suite (81 Tests)
+## 🧪 Running Tests & Regression Suite (149 Tests)
 
 Run the complete test suite covering all modules:
 
@@ -259,6 +412,11 @@ pytest
 ```
 
 ### Test Coverage Highlights:
+- **`tests/test_agent_transport_security.py`**: Enforces remote HTTPS requirement, rejection of cleartext HTTP credentials, loopback exceptions, custom CA bundle propagation, fail-closed TLS error handling, and Caddyfile validation.
+- **`tests/test_config.py`**: JWT secret entropy and production rejection of weak/default credentials across all deployment environments.
+- **`tests/test_sqlite_wal.py`**: SQLite WAL mode persistence and busy timeout handling under concurrent load.
+- **`tests/test_security_remediation.py`**: In-memory test isolation, API key authentication, and batch ingestion bounds.
+- **`tests/test_api_lab.py`**: Lab PC monitoring endpoints, room aggregations, provenance filtering, and offline calculation.
 - **`tests/test_email_service.py`**: SMTP dispatch, STARTTLS, SSL, timeout handling, sanitization, anti-storm alert deduplication, and template rendering.
 - **`tests/test_auth_service.py`**: Admin verification, approval, rejection, password reset, and rate limiting.
 - **`tests/test_super_admin_service.py`**: Super Admin RBAC, role promotion, demotion protections, and audit logging.
@@ -266,7 +424,7 @@ pytest
 - **`tests/test_alert_engine.py` & `tests/test_ai_anomaly.py`**: Isolation Forest, anomaly thresholds, and alert state management.
 
 ```text
-============================= 81 passed in 14.86s =============================
+============================ 149 passed in 14.32s =============================
 ```
 
 ---

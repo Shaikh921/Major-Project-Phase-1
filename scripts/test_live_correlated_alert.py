@@ -3,8 +3,8 @@ Live Anomaly Trigger Script for Email Verification.
 
 Injects an anomalous telemetry sample (breaching Resource Threshold, Isolation Forest, and LSTM)
 into the live monitoring engine for a specified host to trigger dual email dispatch:
-1. Super Admin: s23_shaikh_irafan@mgmcen.ac.in
-2. Host Contact Email: (e.g. irafanshaikh505@gmail.com, projectinengineering@gmail.com, mrirfanshaikh0777@gmail.com)
+1. Super Admin: sre-lead@cloudops.example.internal
+2. Host Contact Email: (e.g. sre-lead@cloudops.example.internal, db-admin@cloudops.example.internal)
 """
 
 import sys
@@ -31,7 +31,7 @@ def trigger_live_correlated_anomaly(target_host: str = "prod-api-01"):
         if not host:
             print(f"[-] Host '{target_host}' not found in database. Creating it...")
             from backend.app.services.host_service import get_or_create_host
-            host = get_or_create_host(db, hostname=target_host, owner_email="irafanshaikh505@gmail.com")
+            host = get_or_create_host(db, hostname=target_host, owner_email="sre-lead@cloudops.example.internal")
 
         print(f"[+] Target Host: {host.hostname} (ID: {host.id})")
         print(f"[+] Associated Owner Email: {host.owner_email}")
@@ -58,9 +58,9 @@ def trigger_live_correlated_anomaly(target_host: str = "prod-api-01"):
             print(f"    - ID: #{a.id} | Kind: {a.kind} | Severity: {a.severity.upper()} | Metric: {a.metric} | Message: {a.message}")
 
         print("\n[+] Email Dispatch Status:")
-        print(f"    -> Super Admin: s23_shaikh_irafan@mgmcen.ac.in")
+        print(f"    -> Super Admin: sre-lead@cloudops.example.internal")
         print(f"    -> Host Owner:  {host.owner_email}")
-        print("\n[✓] Correlated Anomaly Email queued for SMTP delivery via Gmail relay.")
+        print("\n[✓] Correlated Anomaly notification verified.")
     finally:
         db.close()
 

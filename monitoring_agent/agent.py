@@ -34,14 +34,23 @@ class MonitoringAgent:
         provider: str = "bare-metal",
         region: str = "local",
         api_key: Optional[str] = None,
+        ca_bundle: Optional[str] = None,
+        allow_insecure_http: bool = False,
     ):
         self.collector = SystemCollector()
-        self.buffer = MetricBuffer(ingest_url=server_url, api_key=api_key)
+        self.buffer = MetricBuffer(
+            ingest_url=server_url,
+            api_key=api_key,
+            ca_bundle=ca_bundle,
+            allow_insecure_http=allow_insecure_http,
+        )
         self.interval = interval
         self.environment = environment
         self.provider = provider
         self.region = region
         self.api_key = api_key
+        self.ca_bundle = ca_bundle
+        self.allow_insecure_http = allow_insecure_http
         self._running = False
 
     def start(self, max_cycles: Optional[int] = None) -> None:
@@ -110,6 +119,17 @@ def main():
         default=os.getenv("AGENT_API_KEY", os.getenv("AGENT_INGESTION_KEY", "")),
         help="Agent ingestion API key (or set AGENT_API_KEY / AGENT_INGESTION_KEY env var)",
     )
+    parser.add_argument(
+        "--ca-bundle",
+        default=os.getenv("AGENT_CA_BUNDLE", ""),
+        help="Path to custom CA certificate bundle (e.g. Caddy internal root cert) for TLS validation",
+    )
+    parser.add_argument(
+        "--allow-insecure-http",
+        action="store_true",
+        default=False,
+        help="Allow cleartext HTTP for testing (forbidden in production)",
+    )
 
     args = parser.parse_args()
 
@@ -120,6 +140,8 @@ def main():
         provider=args.provider,
         region=args.region,
         api_key=args.api_key,
+        ca_bundle=args.ca_bundle or None,
+        allow_insecure_http=args.allow_insecure_http,
     )
     agent.start()
 

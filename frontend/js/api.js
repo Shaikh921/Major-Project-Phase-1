@@ -391,6 +391,16 @@ class ApiClient {
     }
     return this.request(`/currency/rates?${qs.toString()}`);
   }
+
+  // --- Lab PC Monitoring ---
+  getLabSummary(params = {}) {
+    const qs = new URLSearchParams();
+    if (params.environment) qs.set("environment", params.environment);
+    if (params.offline_after_seconds) qs.set("offline_after_seconds", String(params.offline_after_seconds));
+    if (params.real_agents_only !== undefined) qs.set("real_agents_only", String(params.real_agents_only));
+    return this.request(`/lab/summary?${qs.toString()}`);
+  }
 }
+
 
 export const api = new ApiClient();

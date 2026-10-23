@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # Backend
-    backend_host: str = "0.0.0.0"
+    backend_host: str = "127.0.0.1"
     backend_port: int = 8000
 
     # Security & Auth
@@ -99,19 +99,23 @@ class Settings(BaseSettings):
     def validate_production_security(self) -> "Settings":
         env = (self.environment or "").strip().lower()
         app_env = (self.app_env or "").strip().lower()
-        is_production = env in ("production", "prod") or app_env in ("production", "prod")
+        # Hardened environments include production, staging, lab, and pilot
+        is_hardened = (
+            env in ("production", "prod", "staging", "stage", "lab", "pilot")
+            or app_env in ("production", "prod", "staging", "stage", "lab", "pilot")
+        )
 
-        if is_production:
+        if is_hardened:
             if not self.secret_key or self.secret_key.strip() in KNOWN_INSECURE_DEFAULT_SECRETS:
                 raise ValueError(
-                    "Production Security Error: Insecure or default SECRET_KEY detected. "
-                    "Production deployments must configure a unique, cryptographically strong SECRET_KEY "
+                    "Security Configuration Error: Insecure or default SECRET_KEY detected. "
+                    "Deployments in production, staging, and lab environments must configure a unique, cryptographically strong SECRET_KEY "
                     "via environment variable or .env file (e.g. generated via 'openssl rand -hex 32')."
                 )
             if len(self.secret_key.strip()) < 32:
                 raise ValueError(
-                    "Production Security Error: SECRET_KEY is too short. "
-                    "Production HMAC-SHA256 signing keys must be at least 32 characters long."
+                    "Security Configuration Error: SECRET_KEY is too short. "
+                    "HMAC-SHA256 signing keys in hardened environments must be at least 32 characters long."
                 )
         else:
             if self.secret_key in KNOWN_INSECURE_DEFAULT_SECRETS:

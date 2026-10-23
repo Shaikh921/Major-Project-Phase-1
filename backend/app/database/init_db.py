@@ -121,11 +121,11 @@ def seed_baseline_telemetry_if_empty(db: Session) -> None:
     if existing_host is None:
         now = datetime.now(timezone.utc)
         sample_hosts = [
-            ("prod-api-01", "10.0.1.12", "production", "c5.2xlarge", "simulation", "synthetic", "irafanshaikh505@gmail.com"),
-            ("prod-api-02", "10.0.1.13", "production", "c5.2xlarge", "simulation", "synthetic", "irafanshaikh505@gmail.com"),
-            ("prod-db-primary", "10.0.2.5", "production", "r5.xlarge", "simulation", "synthetic", "projectinengineering@gmail.com"),
-            ("staging-worker-01", "10.0.3.18", "staging", "t3.xlarge", "simulation", "synthetic", "mrirfanshaikh0777@gmail.com"),
-            ("dev-sandbox-01", "10.0.4.99", "development", "t3.medium", "simulation", "synthetic", "mrirfanshaikh0777@gmail.com"),
+            ("prod-api-01", "10.0.1.12", "production", "c5.2xlarge", "simulation", "synthetic", "sre-lead@cloudops.example.internal"),
+            ("prod-api-02", "10.0.1.13", "production", "c5.2xlarge", "simulation", "synthetic", "sre-lead@cloudops.example.internal"),
+            ("prod-db-primary", "10.0.2.5", "production", "r5.xlarge", "simulation", "synthetic", "db-admin@cloudops.example.internal"),
+            ("staging-worker-01", "10.0.3.18", "staging", "t3.xlarge", "simulation", "synthetic", "staging-ops@cloudops.example.internal"),
+            ("dev-sandbox-01", "10.0.4.99", "development", "t3.medium", "simulation", "synthetic", "staging-ops@cloudops.example.internal"),
         ]
         
         host_objs = []
@@ -193,7 +193,7 @@ def seed_baseline_telemetry_if_empty(db: Session) -> None:
 def migrate_schema_if_needed() -> None:
     """
     Safely checks and adds missing columns (such as source_type, owner_email) to existing SQLite tables
-    without destructive drops or data loss.
+    without destructive drops or data loss. Does not overwrite existing owner_email records if column exists.
     """
     from sqlalchemy import text
     with engine.connect() as conn:
@@ -209,13 +209,13 @@ def migrate_schema_if_needed() -> None:
                 conn.execute(text("ALTER TABLE hosts ADD COLUMN owner_email VARCHAR(255)"))
                 conn.commit()
 
-            # Associate host owner emails
-            conn.execute(text("UPDATE hosts SET owner_email = 'irafanshaikh505@gmail.com' WHERE (hostname LIKE 'prod-api%' OR hostname LIKE 'DESKTOP%' OR environment = 'local')"))
-            conn.execute(text("UPDATE hosts SET owner_email = 'projectinengineering@gmail.com' WHERE (hostname LIKE 'prod-db%' OR hostname LIKE '%db%')"))
-            conn.execute(text("UPDATE hosts SET owner_email = 'mrirfanshaikh0777@gmail.com' WHERE (hostname LIKE 'staging%' OR hostname LIKE 'dev-%')"))
-            conn.execute(text("UPDATE hosts SET owner_email = 'irafanshaikh505@gmail.com' WHERE owner_email IS NULL"))
-            conn.commit()
-        except Exception as e:
+                # Associate baseline host owner emails ONLY upon initial column addition
+                conn.execute(text("UPDATE hosts SET owner_email = 'sre-lead@cloudops.example.internal' WHERE (hostname LIKE 'prod-api%' OR hostname LIKE 'DESKTOP%' OR environment = 'local')"))
+                conn.execute(text("UPDATE hosts SET owner_email = 'db-admin@cloudops.example.internal' WHERE (hostname LIKE 'prod-db%' OR hostname LIKE '%db%')"))
+                conn.execute(text("UPDATE hosts SET owner_email = 'staging-ops@cloudops.example.internal' WHERE (hostname LIKE 'staging%' OR hostname LIKE 'dev-%')"))
+                conn.execute(text("UPDATE hosts SET owner_email = 'sre-lead@cloudops.example.internal' WHERE owner_email IS NULL"))
+                conn.commit()
+        except Exception:
             # Table might not exist yet before create_all
             pass
 

@@ -52,6 +52,13 @@ from backend.app.schemas.auth import (
     AdminSummaryStats,
 )
 
+from backend.app.schemas.lab import (
+    LabPCEntry,
+    LabRoomSummary,
+    LabTotalsSummary,
+    LabSummaryResponse,
+)
+
 __all__ = [
     "HostBase",
     "HostCreate",
@@ -94,4 +101,9 @@ __all__ = [
     "AdminActivateAccountRequest",
     "AdminUserRead",
     "AdminSummaryStats",
+    "LabPCEntry",
+    "LabRoomSummary",
+    "LabTotalsSummary",
+    "LabSummaryResponse",
 ]
+

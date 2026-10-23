@@ -138,9 +138,9 @@ c:\CLoudProject
 - **External Network Client**: Python `urllib` (currency rates), `requests` / `httpx` (agent buffer and HTTP dispatch).
 
 ### 3.3 Application Entry Points
-- **Backend API**: `backend.app.main:app` (executed via `uvicorn backend.app.main:app --host 0.0.0.0 --port 8000`).
+- **Backend API**: `backend.app.main:app` (executed via `uvicorn backend.app.main:app --host 127.0.0.1 --port 8000`, fronted by Caddy reverse proxy on port 8443).
 - **Frontend Dashboard**: Served statically by FastAPI at `GET /` and `GET /dashboard/index.html` (`backend/app/main.py:L68-L84`).
-- **Monitoring Agent**: `monitoring_agent/agent.py:main()` (executed via `python monitoring_agent/agent.py --server http://localhost:8000/api/v1/metrics --interval 5`).
+- **Monitoring Agent**: `monitoring_agent/agent.py:main()` (executed via `python monitoring_agent/agent.py --server https://<server-ip>:8443/api/v1/metrics --interval 5 --ca-bundle <path>`).
 - **Fleet Simulator**: `scripts/simulate_fleet.py:main()` (generates synthetic VM traffic).
 
 ---

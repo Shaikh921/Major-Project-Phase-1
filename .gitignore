@@ -26,6 +26,7 @@ wheels/
 
 # Environment Variables & Secrets
 .env
+.env.*
 *.env.local
 *.pem
 *.key
@@ -81,8 +82,21 @@ htmlcov/
 .pytest_cache/
 .mypy_cache/
 
-# Databases
+# Databases & WAL Sidecars
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
 *.sqlite
 *.sqlite3
+
+# Backups & Recovery Manifests
+backups/
+
+# Caddy PKI, Local Authorities & Private Keys
+data/caddy/
+root.crt
+
+# Windows Service Binaries & Archives
+tools/
+*.exe
