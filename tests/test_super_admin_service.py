@@ -94,8 +94,8 @@ def test_super_admin_bootstrap(db):
     EmailService.clear_outbox()
     super_admin = create_bootstrap_admin(
         db,
-        email="superadmin@ops.local",
-        password="SuperAdminSecret2026!"
+        email="bootstrap.superadmin@example.invalid",
+        password="TestBootstrapSecret2026!"
     )
     assert super_admin.id is not None
     assert super_admin.role == UserRole.SUPER_ADMIN
@@ -329,7 +329,7 @@ def test_api_endpoint_super_admin_rbac(client, db):
     auth_rate_limiter.reset_for_key("login:testclient")
     res = client.post(
         "/api/v1/auth/login",
-        json={"email": "superadmin@ops.local", "password": "SuperAdminSecret2026!"},
+        json={"email": "bootstrap.superadmin@example.invalid", "password": "TestBootstrapSecret2026!"},
     )
     assert res.status_code == 200
     super_token = res.json()["access_token"]

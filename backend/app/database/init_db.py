@@ -15,7 +15,7 @@ from backend.app.database.session import SessionLocal
 
 # Import all models so SQLAlchemy metadata registers them
 from backend.app.models.host import Host
-from backend.app.models.metric import Metric
+from backend.app.models.metric import Metric, IngestedBatch
 from backend.app.models.alert import AlertRule, Alert, AlertFeedback
 from backend.app.models.security import SecurityEvent, AuditLog
 from backend.app.models.cost import PricingCatalog, CostRecommendation
@@ -214,6 +214,21 @@ def migrate_schema_if_needed() -> None:
                 conn.execute(text("UPDATE hosts SET owner_email = 'db-admin@cloudops.example.internal' WHERE (hostname LIKE 'prod-db%' OR hostname LIKE '%db%')"))
                 conn.execute(text("UPDATE hosts SET owner_email = 'staging-ops@cloudops.example.internal' WHERE (hostname LIKE 'staging%' OR hostname LIKE 'dev-%')"))
                 conn.execute(text("UPDATE hosts SET owner_email = 'sre-lead@cloudops.example.internal' WHERE owner_email IS NULL"))
+            # Check existing columns on agent_api_keys table
+            result_keys = conn.execute(text("PRAGMA table_info(agent_api_keys)"))
+            key_columns = [row[1] for row in result_keys.fetchall()]
+            if key_columns and "device_uuid" not in key_columns:
+                conn.execute(text("ALTER TABLE agent_api_keys ADD COLUMN device_uuid VARCHAR(64)"))
+                conn.commit()
+            if key_columns and "is_disabled" not in key_columns:
+                conn.execute(text("ALTER TABLE agent_api_keys ADD COLUMN is_disabled BOOLEAN DEFAULT 0"))
+                conn.commit()
+
+            # Check existing columns on device_enrollments table
+            result_devs = conn.execute(text("PRAGMA table_info(device_enrollments)"))
+            dev_columns = [row[1] for row in result_devs.fetchall()]
+            if dev_columns and "pending_raw_key" not in dev_columns:
+                conn.execute(text("ALTER TABLE device_enrollments ADD COLUMN pending_raw_key TEXT"))
                 conn.commit()
         except Exception:
             # Table might not exist yet before create_all

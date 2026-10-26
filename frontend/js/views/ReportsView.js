@@ -2,10 +2,10 @@
  * Reports View - Executive & Operational Summary Generator.
  */
 
-import { api } from "../api.js?v=3.3.0";
-import { currencyManager } from "../currency.js?v=3.3.0";
-import { escapeHtml, formatTimestamp } from "../sanitizer.js?v=3.3.0";
-import { renderIcon } from "../components/Icons.js?v=3.3.0";
+import { api } from "../api.js";
+import { currencyManager } from "../currency.js";
+import { escapeHtml, formatTimestamp } from "../sanitizer.js";
+import { renderIcon } from "../components/Icons.js";
 
 export async function renderReportsView(container) {
   container.innerHTML = `

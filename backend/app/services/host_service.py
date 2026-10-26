@@ -56,10 +56,12 @@ def get_or_create_host(
     region: Optional[str] = "local",
     source_type: Optional[str] = "UNKNOWN",
     owner_email: Optional[str] = None,
+    commit: bool = True,
 ) -> Host:
     """
     Retrieves an existing host by hostname or automatically provisions a new record (M1-FR2).
     Updates IP address, source_type, owner_email, and last seen metadata if changed.
+    When commit=False, flushes changes into the active transaction without committing.
     """
     statement = select(Host).where(Host.hostname == hostname)
     host = db.scalar(statement)
@@ -77,8 +79,11 @@ def get_or_create_host(
             tags={},
         )
         db.add(host)
-        db.commit()
-        db.refresh(host)
+        if commit:
+            db.commit()
+            db.refresh(host)
+        else:
+            db.flush()
     else:
         # Update IP, source_type, owner_email, and activity if it was offline or changed
         changed = False
@@ -96,8 +101,11 @@ def get_or_create_host(
             changed = True
         if changed:
             host.updated_at = datetime.now(timezone.utc)
-            db.commit()
-            db.refresh(host)
+            if commit:
+                db.commit()
+                db.refresh(host)
+            else:
+                db.flush()
 
     return host
 
@@ -120,7 +128,8 @@ def get_hosts(
     environment: Optional[str] = None,
 ) -> List[Host]:
     """
-    Retrieves all registered hosts with optional active and environment filters.
+    Retrieves all registered hosts with optional a
+    ctive and environment filters.
     """
     statement = select(Host).order_by(Host.id)
     if active_only:
@@ -162,3 +171,5 @@ def deactivate_host(db: Session, host_id: int) -> Optional[Host]:
     db.commit()
     db.refresh(host)
     return host
+
+

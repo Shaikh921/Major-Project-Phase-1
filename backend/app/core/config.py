@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     gemini_api_key: str = ""
     anthropic_api_key: str = ""
-    default_llm_model: str = "gpt-4o-mini"
+    default_llm_model: str = "gemini-2.5-flash"
 
     # AWS
     aws_access_key_id: str = ""

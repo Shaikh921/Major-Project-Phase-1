@@ -98,6 +98,12 @@ def verify_agent_credentials(
             headers={"WWW-Authenticate": "ApiKey"},
         )
 
+    if getattr(key_record, "is_disabled", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Authentication failed: Agent ingestion key is disabled by administrator.",
+        )
+
     if not key_record.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -112,6 +118,29 @@ def verify_agent_credentials(
             headers={"WWW-Authenticate": "ApiKey"},
         )
 
+    # If linked to a DeviceEnrollment, enforce device lifecycle status
+    device_uuid = getattr(key_record, "device_uuid", None)
+    if device_uuid:
+        from backend.app.models.device import DeviceEnrollment, DeviceStatus
+        dev_stmt = select(DeviceEnrollment).where(DeviceEnrollment.device_uuid == device_uuid)
+        device = db.scalar(dev_stmt)
+        if device:
+            if device.status == DeviceStatus.DISABLED.value:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Telemetry ingestion rejected: Device is temporarily disabled by administrator.",
+                )
+            if device.status == DeviceStatus.RETIRED.value:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Telemetry ingestion rejected: Device is permanently retired.",
+                )
+            if device.status != DeviceStatus.APPROVED.value:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Telemetry ingestion rejected: Device enrollment status is '{device.status}'.",
+                )
+
     # Update last_used_at timestamp safely
     key_record.last_used_at = datetime.now(timezone.utc)
     try:
@@ -125,7 +154,9 @@ def verify_agent_credentials(
         "name": key_record.name,
         "source_type": key_record.source_type,
         "key_prefix": key_record.key_prefix,
+        "device_uuid": device_uuid,
     }
+
 
 
 def get_current_user(

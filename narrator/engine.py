@@ -12,16 +12,19 @@ from sqlalchemy import select, desc
 from sqlalchemy.orm import Session
 
 from backend.app.models.host import Host
+import logging
 from backend.app.models.metric import Metric
 from backend.app.models.alert import Alert
 from backend.app.models.security import SecurityEvent
 from backend.app.models.cost import CostRecommendation
 
+logger = logging.getLogger("narrator.engine")
+
 
 class IncidentNarratorEngine:
     """
-    Correlates multi-domain signals across Performance, Security, and Cost
-    to produce structured incident narratives with clear evidence citations.
+    RAG-augmented Intelligence Engine correlating multi-domain signals across
+    Performance, Security, Cost, and operational SRE runbooks.
     """
 
     def analyze_incident(
@@ -33,7 +36,33 @@ class IncidentNarratorEngine:
         time_window_minutes: int = 60,
     ) -> Dict[str, Any]:
         """
-        Executes cross-module signal aggregation and generates a structured analysis.
+        Executes RAG-augmented incident investigation across operational runbooks
+        and live telemetry. Falls back to deterministic correlation if needed.
+        """
+        try:
+            from RAG_System.pipeline import RAGPipeline
+            pipeline = RAGPipeline.get_instance()
+            return pipeline.query(
+                db=db,
+                query=query,
+                host_id=host_id,
+                environment=environment,
+                time_window_minutes=time_window_minutes,
+            )
+        except Exception as e:
+            logger.warning("RAG Pipeline query encountered error (%s); falling back to direct telemetry analysis.", e)
+            return self._analyze_incident_fallback(db, query, host_id, environment, time_window_minutes)
+
+    def _analyze_incident_fallback(
+        self,
+        db: Session,
+        query: str,
+        host_id: Optional[int] = None,
+        environment: Optional[str] = None,
+        time_window_minutes: int = 60,
+    ) -> Dict[str, Any]:
+        """
+        Executes cross-module signal aggregation and generates a structured analysis (deterministic fallback).
         """
         now = datetime.now(timezone.utc)
         since_ts = now - timedelta(minutes=time_window_minutes)

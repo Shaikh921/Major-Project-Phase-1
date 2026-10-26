@@ -45,3 +45,6 @@ class AgentApiKey(Base):
     )
     last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    device_uuid: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    is_disabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+

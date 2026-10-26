@@ -7,9 +7,9 @@
  * and room summaries with visibility-aware background polling.
  */
 
-import { api } from "../api.js?v=3.3.0";
-import { escapeHtml, formatRelativeTime, formatTimestamp } from "../sanitizer.js?v=3.3.0";
-import { renderIcon } from "../components/Icons.js?v=3.3.0";
+import { api } from "../api.js";
+import { escapeHtml, formatRelativeTime, formatTimestamp } from "../sanitizer.js";
+import { renderIcon } from "../components/Icons.js";
 
 const REFRESH_INTERVAL_MS = 10000;
 

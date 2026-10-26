@@ -31,6 +31,8 @@ class NarratorStructuredExplanation(BaseModel):
     affected_resources: List[str]
     timeline_events: List[EvidenceItem]
     cited_data_sources: List[str]
+    retrieved_chunks: Optional[List[Dict[str, Any]]] = None
+    model_used: Optional[str] = None
 
 
 class NarratorQueryResponse(BaseModel):

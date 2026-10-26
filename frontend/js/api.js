@@ -26,7 +26,7 @@ class ApiClient {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), options.timeout || 12000);
+    const timeout = setTimeout(() => controller.abort(), options.timeout || 30000);
 
     try {
       const response = await fetch(url, {
@@ -206,6 +206,10 @@ class ApiClient {
     });
   }
 
+  revokeAdminUserSessions(id) {
+    return this.revokeAdminSessions(id);
+  }
+
   forceAdminPasswordReset(id) {
     return this.request(`/admin/users/${id}/force-password-reset`, {
       method: "POST",
@@ -356,6 +360,7 @@ class ApiClient {
   queryNarrator(query, hostId = null, env = null, windowMinutes = 60) {
     return this.request("/narrator/query", {
       method: "POST",
+      timeout: 60000, // 60s allowance for LLM reasoning and cloud retrieval
       body: JSON.stringify({
         query,
         host_id: hostId,
@@ -399,6 +404,68 @@ class ApiClient {
     if (params.offline_after_seconds) qs.set("offline_after_seconds", String(params.offline_after_seconds));
     if (params.real_agents_only !== undefined) qs.set("real_agents_only", String(params.real_agents_only));
     return this.request(`/lab/summary?${qs.toString()}`);
+  }
+
+  // --- Device Enrollment & Fleet Management ---
+  generateEnrollmentCode(expiresInMinutes = 15, notes = null) {
+    return this.request("/devices/enrollment-codes", {
+      method: "POST",
+      body: JSON.stringify({ expires_in_minutes: expiresInMinutes, notes }),
+    });
+  }
+
+  listEnrollmentCodes() {
+    return this.request("/devices/enrollment-codes");
+  }
+
+  revokeEnrollmentCode(codeId) {
+    return this.request(`/devices/enrollment-codes/${codeId}`, {
+      method: "DELETE",
+    });
+  }
+
+  getDevices(status = null) {
+    const qs = new URLSearchParams();
+    if (status) qs.set("status", status);
+    return this.request(`/devices?${qs.toString()}`);
+  }
+
+  getDeviceStats() {
+    return this.request("/devices/summary");
+  }
+
+  approveDevice(deviceId, payload) {
+    return this.request(`/devices/${deviceId}/approve`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  rejectDevice(deviceId, reason = "Administrative rejection") {
+    return this.request(`/devices/${deviceId}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  disableDevice(deviceId, reason = "Disabled by administrator") {
+    return this.request(`/devices/${deviceId}/disable`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  enableDevice(deviceId) {
+    return this.request(`/devices/${deviceId}/enable`, {
+      method: "POST",
+    });
+  }
+
+  retireDevice(deviceId, reason = "Decommissioned by administrator") {
+    return this.request(`/devices/${deviceId}/retire`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
   }
 }
 

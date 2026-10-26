@@ -2,10 +2,10 @@
  * Cost View - Cloud Spend Optimization & Rightsizing (Module 3).
  */
 
-import { api } from "../api.js?v=3.3.0";
-import { currencyManager } from "../currency.js?v=3.3.0";
-import { escapeHtml, formatRelativeTime, formatTimestamp } from "../sanitizer.js?v=3.3.0";
-import { renderIcon } from "../components/Icons.js?v=3.3.0";
+import { api } from "../api.js";
+import { currencyManager } from "../currency.js";
+import { escapeHtml, formatRelativeTime, formatTimestamp } from "../sanitizer.js";
+import { renderIcon } from "../components/Icons.js";
 
 export async function renderCostView(container) {
   container.innerHTML = `

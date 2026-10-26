@@ -74,7 +74,7 @@ class AuthManager {
       if (this.isAuthenticated) {
         try {
           // Dynamic import to prevent circular dependency
-          const { api } = await import("./api.js?v=3.3.0");
+          const { api } = await import("./api.js");
           const data = await api.refreshSession();
           if (data && data.access_token) {
             this.setSession(data.access_token, data.user, data.expires_in_seconds);
@@ -88,7 +88,7 @@ class AuthManager {
 
   async checkExistingSession() {
     try {
-      const { api } = await import("./api.js?v=3.3.0");
+      const { api } = await import("./api.js");
       const data = await api.refreshSession();
       if (data && data.access_token) {
         this.setSession(data.access_token, data.user, data.expires_in_seconds);

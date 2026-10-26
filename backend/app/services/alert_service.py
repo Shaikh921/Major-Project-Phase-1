@@ -72,7 +72,12 @@ def get_active_rules(db: Session, environment: Optional[str] = None) -> List[Ale
     return list(db.scalars(statement).all())
 
 
-def evaluate_metric_sample(db: Session, host: Host, metric: Metric) -> List[Alert]:
+def evaluate_metric_sample(
+    db: Session,
+    host: Host,
+    metric: Metric,
+    commit: bool = True,
+) -> List[Alert]:
     """
     Evaluates an incoming metric sample against all active rules.
     
@@ -83,6 +88,7 @@ def evaluate_metric_sample(db: Session, host: Host, metric: Metric) -> List[Aler
        - If no active alert exists, create a new Alert record with status='active'.
     2. If a rule condition is NOT breached and an active alert currently exists:
        - Automatically resolve the alert (status='resolved', resolved_at=now).
+    When commit=False, flushes changes into the active transaction without committing.
     """
     rules = get_active_rules(db, host.environment)
     generated_or_updated_alerts: List[Alert] = []
@@ -141,8 +147,11 @@ def evaluate_metric_sample(db: Session, host: Host, metric: Metric) -> List[Aler
                     f"Threshold breached: {best_rule.metric} is {val:.1f}% "
                     f"({best_rule.operator} {best_rule.threshold:.1f}%)"
                 )
-                db.commit()
-                db.refresh(existing_alert)
+                if commit:
+                    db.commit()
+                    db.refresh(existing_alert)
+                else:
+                    db.flush()
                 generated_or_updated_alerts.append(existing_alert)
 
                 # Dispatch notification if newly escalated to critical
@@ -166,8 +175,11 @@ def evaluate_metric_sample(db: Session, host: Host, metric: Metric) -> List[Aler
                     created_at=metric.timestamp or datetime.now(timezone.utc),
                 )
                 db.add(new_alert)
-                db.commit()
-                db.refresh(new_alert)
+                if commit:
+                    db.commit()
+                    db.refresh(new_alert)
+                else:
+                    db.flush()
                 generated_or_updated_alerts.append(new_alert)
 
                 # Dispatch critical alert email on new alert creation
@@ -177,7 +189,10 @@ def evaluate_metric_sample(db: Session, host: Host, metric: Metric) -> List[Aler
             if existing_alert:
                 existing_alert.status = "resolved"
                 existing_alert.resolved_at = datetime.now(timezone.utc)
-                db.commit()
+                if commit:
+                    db.commit()
+                else:
+                    db.flush()
 
     return generated_or_updated_alerts
 

@@ -143,11 +143,13 @@ def evaluate_and_record_ai_anomaly(
     db: Session,
     host: Host,
     metric: Metric,
+    commit: bool = True,
 ) -> Optional[Alert]:
     """
     Evaluates an incoming sample for AI anomalies. If anomalous, raises/updates
     a deduplicated alert with kind='anomaly' annotated with top contributing metrics (M5-FR5).
     Falls back to threshold-only alerting until model is trained with sufficient history (M2 NFR).
+    When commit=False, flushes changes into the active transaction without committing.
     """
     detector = get_global_detector()
     if not detector.is_trained:
@@ -182,7 +184,10 @@ def evaluate_and_record_ai_anomaly(
         if existing:
             existing.status = "resolved"
             existing.resolved_at = datetime.now(timezone.utc)
-            db.commit()
+            if commit:
+                db.commit()
+            else:
+                db.flush()
         return None
 
     # Anomaly detected: find top contributing metric
@@ -205,8 +210,11 @@ def evaluate_and_record_ai_anomaly(
         existing_alert.severity = severity
         existing_alert.message = msg
         existing_alert.metric = top_feature
-        db.commit()
-        db.refresh(existing_alert)
+        if commit:
+            db.commit()
+            db.refresh(existing_alert)
+        else:
+            db.flush()
         return existing_alert
     else:
         new_alert = Alert(
@@ -221,8 +229,11 @@ def evaluate_and_record_ai_anomaly(
             created_at=metric.timestamp or datetime.now(timezone.utc),
         )
         db.add(new_alert)
-        db.commit()
-        db.refresh(new_alert)
+        if commit:
+            db.commit()
+            db.refresh(new_alert)
+        else:
+            db.flush()
         return new_alert
 
 
@@ -287,6 +298,7 @@ def evaluate_correlated_anomaly(
     db: Session,
     host: Host,
     metric: Metric,
+    commit: bool = True,
 ) -> Optional[Alert]:
     """
     Evaluates 3-tier correlated anomaly detection:
@@ -296,6 +308,7 @@ def evaluate_correlated_anomaly(
     
     When all 3 conditions are met, creates/updates a critical correlated alert and dispatches
     high-priority email notifications to Super Admins and the host-associated contact email.
+    When commit=False, flushes changes into the active transaction without committing.
     """
     # 1. Condition: Check if resource usage exceeds operational thresholds
     has_high_resource_usage = (
@@ -372,8 +385,11 @@ def evaluate_correlated_anomaly(
         existing_alert.severity = "critical"
         existing_alert.message = msg
         existing_alert.metric = top_feature
-        db.commit()
-        db.refresh(existing_alert)
+        if commit:
+            db.commit()
+            db.refresh(existing_alert)
+        else:
+            db.flush()
         return existing_alert
     else:
         new_alert = Alert(
@@ -388,8 +404,11 @@ def evaluate_correlated_anomaly(
             created_at=metric.timestamp or datetime.now(timezone.utc),
         )
         db.add(new_alert)
-        db.commit()
-        db.refresh(new_alert)
+        if commit:
+            db.commit()
+            db.refresh(new_alert)
+        else:
+            db.flush()
 
         # Dispatch email notifications
         _dispatch_correlated_alert_notifications(db, new_alert, host, metric, iso_res, lstm_res)

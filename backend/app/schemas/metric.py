@@ -31,10 +31,12 @@ class MetricCreate(BaseModel):
     disk_percent: float = Field(..., ge=0.0, le=100.0, description="Disk utilization percentage (0-100)")
     network_sent_mb: float = Field(default=0.0, ge=0.0, description="Network megabytes sent since last interval")
     network_received_mb: float = Field(default=0.0, ge=0.0, description="Network megabytes received since last interval")
+    batch_id: Optional[str] = Field(None, description="Client-generated unique batch identifier for idempotent retries")
 
 
 class MetricBatchCreate(BaseModel):
     """Payload for submitting multiple metric samples in a single batch request."""
+    batch_id: Optional[str] = Field(None, description="Client-generated unique batch identifier for idempotent retries")
     metrics: List[MetricCreate] = Field(
         ...,
         min_length=1,

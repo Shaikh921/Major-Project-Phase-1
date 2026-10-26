@@ -8,11 +8,11 @@
  * 4. Summary metrics and security guardrails.
  */
 
-import { api } from "../api.js?v=3.3.0";
-import { authManager } from "../auth.js?v=3.3.0";
-import { escapeHtml, formatTimestamp } from "../sanitizer.js?v=3.3.0";
-import { renderIcon } from "../components/Icons.js?v=3.3.0";
-import { openModal, closeModal } from "../components/Modal.js?v=3.3.0";
+import { api } from "../api.js";
+import { authManager } from "../auth.js";
+import { escapeHtml, formatTimestamp } from "../sanitizer.js";
+import { renderIcon } from "../components/Icons.js";
+import { openModal, closeModal } from "../components/Modal.js";
 
 let currentTab = "requests"; // "requests" | "directory"
 

@@ -3,7 +3,7 @@ Administrator Bootstrap CLI Command.
 
 Usage:
     python -m backend.app.cli.bootstrap_admin
-    python -m backend.app.cli.bootstrap_admin --email admin@ops.local
+    python -m backend.app.cli.bootstrap_admin --email admin@example.invalid
 
 Prompts securely for password using getpass to avoid leaking credentials
 into process tables or shell command history.

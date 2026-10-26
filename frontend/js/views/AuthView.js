@@ -13,10 +13,10 @@
  * Adheres strictly to the Point 1 SVG Icon system and design tokens.
  */
 
-import { api } from "../api.js?v=3.3.0";
-import { authManager } from "../auth.js?v=3.3.0";
-import { escapeHtml } from "../sanitizer.js?v=3.3.0";
-import { renderIcon } from "../components/Icons.js?v=3.3.0";
+import { api } from "../api.js";
+import { authManager } from "../auth.js";
+import { escapeHtml } from "../sanitizer.js";
+import { renderIcon } from "../components/Icons.js";
 
 export function renderAuthView(container, initialMode = "login", tokenParam = "") {
   let mode = initialMode;

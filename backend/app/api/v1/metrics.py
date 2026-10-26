@@ -4,7 +4,7 @@ Metric Ingestion and Query API Router.
 Endpoints for telemetry agent submission and historical time-series retrieval.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, Union
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -93,6 +93,26 @@ def submit_metrics(
     credential_source = agent_info.get("source_type", "UNKNOWN")
     validate_telemetry_provenance(payload, credential_source)
 
+    device_uuid = agent_info.get("device_uuid")
+    if device_uuid:
+        from backend.app.services.device_service import update_device_telemetry_heartbeat
+        sample_time = None
+        if isinstance(payload, MetricBatchCreate) and payload.metrics:
+            sample_time = payload.metrics[-1].timestamp
+            backlog = len(payload.metrics)
+        elif not isinstance(payload, MetricBatchCreate):
+            sample_time = payload.timestamp
+            backlog = 1
+        else:
+            backlog = 0
+        update_device_telemetry_heartbeat(
+            db=db,
+            device_uuid=device_uuid,
+            collection_ts=sample_time,
+            upload_ts=datetime.now(timezone.utc),
+            queue_backlog=backlog,
+        )
+
     if isinstance(payload, MetricBatchCreate):
         return ingest_metrics_batch(db, payload)
     else:
@@ -102,6 +122,7 @@ def submit_metrics(
             "metric": MetricRead.model_validate(metric),
             "generated_alerts": len(alerts),
         }
+
 
 
 @router.get("", response_model=MetricTimeSeriesResponse)

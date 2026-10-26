@@ -17,6 +17,7 @@ from backend.app.services.metric_service import (
     get_host_metrics,
     get_latest_host_metric,
     get_fleet_summary,
+    cleanup_expired_idempotency_records,
 )
 from backend.app.services.alert_service import (
     evaluate_condition,

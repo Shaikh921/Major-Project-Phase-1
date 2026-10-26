@@ -6,6 +6,13 @@ CORS middleware, and REST API routing for all platform modules.
 """
 
 import os
+import sys
+
+# Ensure user site-packages are accessible even when running under Windows Virtual Service Account
+_user_site = r"C:\Users\Dell\AppData\Roaming\Python\Python313\site-packages"
+if os.path.exists(_user_site) and _user_site not in sys.path:
+    sys.path.append(_user_site)
+
 # CloudOps Intel / SRE Command Center - Main Application Entrypoint
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request

@@ -5,30 +5,31 @@
  * header user session controls, and background polling.
  */
 
-import { store, ENVIRONMENTS, TIME_RANGES } from "./config.js?v=3.3.0";
-import { api } from "./api.js?v=3.3.0";
-import { authManager } from "./auth.js?v=3.3.0";
-import { currencyManager } from "./currency.js?v=3.3.0";
-import { escapeHtml } from "./sanitizer.js?v=3.3.0";
-import { renderIcon } from "./components/Icons.js?v=3.3.0";
-import { openCommandPalette } from "./components/CommandPalette.js?v=3.3.0";
-import { renderNotificationDrawer } from "./components/NotificationCenter.js?v=3.3.0";
+import { store, ENVIRONMENTS, TIME_RANGES } from "./config.js";
+import { api } from "./api.js?v=3.6.1";
+import { authManager } from "./auth.js";
+import { currencyManager } from "./currency.js";
+import { escapeHtml } from "./sanitizer.js";
+import { renderIcon } from "./components/Icons.js";
+import { openCommandPalette } from "./components/CommandPalette.js";
+import { renderNotificationDrawer } from "./components/NotificationCenter.js";
 
 // View Imports
-import { renderAuthView } from "./views/AuthView.js?v=3.3.0";
-import { renderOverviewView } from "./views/OverviewView.js?v=3.3.0";
-import { renderResourcesView } from "./views/ResourcesView.js?v=3.3.0";
-import { renderMetricsView } from "./views/MetricsView.js?v=3.3.0";
-import { renderAnomaliesView } from "./views/AnomaliesView.js?v=3.3.0";
-import { renderIncidentsView } from "./views/IncidentsView.js?v=3.3.0";
-import { renderSecurityView } from "./views/SecurityView.js?v=3.3.0";
-import { renderCostView } from "./views/CostView.js?v=3.3.0";
-import { renderNarratorView } from "./views/NarratorView.js?v=3.3.0";
-import { renderReportsView } from "./views/ReportsView.js?v=3.3.0";
-import { renderAuditView } from "./views/AuditView.js?v=3.3.0";
-import { renderSettingsView } from "./views/SettingsView.js?v=3.3.0";
-import { renderAdminManagementView } from "./views/AdminManagementView.js?v=3.3.0";
-import { renderLabView, destroyLabView } from "./views/LabView.js?v=3.3.0";
+import { renderAuthView } from "./views/AuthView.js";
+import { renderOverviewView } from "./views/OverviewView.js";
+import { renderResourcesView } from "./views/ResourcesView.js";
+import { renderMetricsView } from "./views/MetricsView.js";
+import { renderAnomaliesView } from "./views/AnomaliesView.js";
+import { renderIncidentsView } from "./views/IncidentsView.js";
+import { renderSecurityView } from "./views/SecurityView.js";
+import { renderCostView } from "./views/CostView.js";
+import { renderNarratorView } from "./views/NarratorView.js";
+import { renderReportsView } from "./views/ReportsView.js";
+import { renderAuditView } from "./views/AuditView.js";
+import { renderSettingsView } from "./views/SettingsView.js";
+import { renderAdminManagementView } from "./views/AdminManagementView.js";
+import { renderDeviceManagementView } from "./views/DeviceManagementView.js";
+import { renderLabView, destroyLabView } from "./views/LabView.js";
 
 const VIEW_MAP = {
   overview: renderOverviewView,
@@ -44,12 +45,14 @@ const VIEW_MAP = {
   audit: renderAuditView,
   settings: renderSettingsView,
   "admin-management": renderAdminManagementView,
+  "device-management": renderDeviceManagementView,
 };
 
 
 let pollTimer = null;
 
 export async function initApp() {
+  window.navigateTo = navigateTo;
   bindGlobalShortcuts();
   bindHeaderControls();
   bindSidebarNavigation();
@@ -172,7 +175,7 @@ function updateAuthUiState() {
     // Role-based visibility for Sidebar navigation items
     document.querySelectorAll(".nav-item").forEach(item => {
       const view = item.getAttribute("data-view");
-      if (view === "admin-management") {
+      if (view === "admin-management" || view === "device-management") {
         item.style.display = authManager.isSuperAdmin() ? "flex" : "none";
       } else if (view === "audit" || view === "settings") {
         item.style.display = authManager.isAdmin() ? "flex" : "none";
@@ -193,25 +196,27 @@ function updateAuthUiState() {
     // Hide administrative navigation tabs for unauthenticated users
     document.querySelectorAll(".nav-item").forEach(item => {
       const view = item.getAttribute("data-view");
-      if (view === "admin-management" || view === "audit" || view === "settings") {
+      if (view === "admin-management" || view === "device-management" || view === "audit" || view === "settings") {
         item.style.display = "none";
       }
     });
   }
 }
 
-function navigateTo(viewKey) {
+export function navigateTo(viewKey) {
   if (!authManager.isAuthenticated) {
     renderUnauthenticatedView();
     return;
   }
 
   // Guard super admin and admin views
-  if (viewKey === "admin-management" && !authManager.isSuperAdmin()) {
+  if ((viewKey === "admin-management" || viewKey === "device-management") && !authManager.isSuperAdmin()) {
     viewKey = "overview";
   } else if ((viewKey === "audit" || viewKey === "settings") && !authManager.isAdmin()) {
     viewKey = "overview";
   }
+
+  store.currentView = viewKey;
 
   if (viewKey !== "lab") {
     destroyLabView();

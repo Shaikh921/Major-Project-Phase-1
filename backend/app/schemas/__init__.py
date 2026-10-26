@@ -59,7 +59,23 @@ from backend.app.schemas.lab import (
     LabSummaryResponse,
 )
 
+from backend.app.schemas.device import (
+    EnrollmentCodeCreate,
+    EnrollmentCodeGenerated,
+    EnrollmentCodeRead,
+    DeviceEnrollRequest,
+    DeviceEnrollResponse,
+    DeviceClaimCredentialRequest,
+    DeviceClaimCredentialResponse,
+    DeviceApproveRequest,
+    DeviceRejectRequest,
+    DeviceUninstallNoticeRequest,
+    DeviceRead,
+    DeviceSummaryStats,
+)
+
 __all__ = [
+
     "HostBase",
     "HostCreate",
     "HostRead",

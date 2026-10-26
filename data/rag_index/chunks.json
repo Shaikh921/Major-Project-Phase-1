@@ -1,0 +1,722 @@
+[
+  {
+    "chunk_id": "brute_force_intrusion_sec_0",
+    "doc_id": "brute_force_intrusion",
+    "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+    "section": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+    "text": "# SRE Runbook: Brute Force Authentication & Perimeter Intrusion\n\n**ID:** `RUNBOOK-SEC-004`  \n**Domain:** Security & Identity  \n**Applies To:** Caddy Reverse Proxy, SSH Bastions, Super Admin Authentication Endpoints  \n**Severity:** High to Critical",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "brute_force_intrusion.md",
+      "source": "brute_force_intrusion",
+      "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+      "section": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+      "word_count": 30
+    }
+  },
+  {
+    "chunk_id": "brute_force_intrusion_sec_1",
+    "doc_id": "brute_force_intrusion",
+    "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+    "section": "1. Symptom Profile",
+    "text": "## 1. Symptom Profile\n- Surging volume of HTTP 401 Unauthorized or 403 Forbidden responses on `/api/v1/auth/login`.\n- High rate of repeated failed login attempts against identical or rotating usernames from specific external IP addresses.\n- Security event detections: `brute_force_detected`, `ssh_auth_failure`, or `credential_stuffing_wave`.\n- Elevated network connection states in `SYN_RECV` or rapid TCP connection recycling.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "brute_force_intrusion.md",
+      "source": "brute_force_intrusion",
+      "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+      "section": "1. Symptom Profile",
+      "word_count": 55
+    }
+  },
+  {
+    "chunk_id": "brute_force_intrusion_sec_2",
+    "doc_id": "brute_force_intrusion",
+    "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+    "section": "2. Root Cause Classification",
+    "text": "## 2. Root Cause Classification\n- **Automated Credential Stuffing:** Botnet attacking exposed management endpoints with leaked credential lists.\n- **Password Spray Attack:** Slow-rate attempts testing common passwords across hundreds of known enterprise usernames to avoid naive rate limits.\n- **Port / Vulnerability Scanner:** Automated internet scanners (e.g., Shodan, Censys) probing for open admin dashboards or SSH ports.\n- **Misconfigured Automation Script:** Internal agent or cron worker attempting to authenticate with an expired or rotated API key.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "brute_force_intrusion.md",
+      "source": "brute_force_intrusion",
+      "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+      "section": "2. Root Cause Classification",
+      "word_count": 76
+    }
+  },
+  {
+    "chunk_id": "brute_force_intrusion_sec_3",
+    "doc_id": "brute_force_intrusion",
+    "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+    "section": "3. Immediate Diagnostic Commands",
+    "text": "## 3. Immediate Diagnostic Commands\n```bash",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "brute_force_intrusion.md",
+      "source": "brute_force_intrusion",
+      "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+      "section": "3. Immediate Diagnostic Commands",
+      "word_count": 6
+    }
+  },
+  {
+    "chunk_id": "brute_force_intrusion_sec_4",
+    "doc_id": "brute_force_intrusion",
+    "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+    "section": "Identify top IP addresses generating failed login attempts",
+    "text": "# Identify top IP addresses generating failed login attempts\ngrep \"401\" /var/log/caddy/access.log | awk '{print $1}' | sort | uniq -c | sort -nr | head -n 10",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "brute_force_intrusion.md",
+      "source": "brute_force_intrusion",
+      "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+      "section": "Identify top IP addresses generating failed login attempts",
+      "word_count": 28
+    }
+  },
+  {
+    "chunk_id": "brute_force_intrusion_sec_5",
+    "doc_id": "brute_force_intrusion",
+    "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+    "section": "Inspect active TCP connections by remote address",
+    "text": "# Inspect active TCP connections by remote address\nnetstat -ntu | awk '{print $5}' | cut -d: -f1 | sort | uniq -c | sort -n",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "brute_force_intrusion.md",
+      "source": "brute_force_intrusion",
+      "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+      "section": "Inspect active TCP connections by remote address",
+      "word_count": 26
+    }
+  },
+  {
+    "chunk_id": "brute_force_intrusion_sec_6",
+    "doc_id": "brute_force_intrusion",
+    "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+    "section": "Query CloudOps Intel Security Event audit log",
+    "text": "# Query CloudOps Intel Security Event audit log\nSELECT ip_address, count(*) as failed_attempts FROM security_events WHERE event_type = 'auth_failure' GROUP BY ip_address ORDER BY failed_attempts DESC LIMIT 10;\n```",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "brute_force_intrusion.md",
+      "source": "brute_force_intrusion",
+      "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+      "section": "Query CloudOps Intel Security Event audit log",
+      "word_count": 29
+    }
+  },
+  {
+    "chunk_id": "brute_force_intrusion_sec_7",
+    "doc_id": "brute_force_intrusion",
+    "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+    "section": "4. Remediation Steps",
+    "text": "## 4. Remediation Steps\n1. **Immediate IP Perimeter Block:**\n   - Drop offending source IPs at firewall or Caddy level:\n     `iptables -A INPUT -s <OFFENDING_IP> -j DROP` or add IP ban rule in Caddyfile reverse proxy block.\n2. **Account Lockout & Password Invalidation:**\n   - Temporarily suspend accounts targeted with > 10 failed attempts and require password reset via email verification.\n3. **Enforce Multi-Factor Authentication (MFA):**\n   - Ensure all admin and operator accounts require TOTP or security keys for privileged access.\n4. **Audit Token Revocation:**\n   - Invalidate active JWT refresh tokens if compromised credentials or session hijacking is suspected.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "brute_force_intrusion.md",
+      "source": "brute_force_intrusion",
+      "title": "SRE Runbook: Brute Force Authentication & Perimeter Intrusion",
+      "section": "4. Remediation Steps",
+      "word_count": 97
+    }
+  },
+  {
+    "chunk_id": "cost_anomaly_rightsizer_sec_0",
+    "doc_id": "cost_anomaly_rightsizer",
+    "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+    "section": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+    "text": "# SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing\n\n**ID:** `RUNBOOK-COST-006`  \n**Domain:** Cloud FinOps & Cost Optimization  \n**Applies To:** AWS EC2, GCP Compute Engine, Azure VMs, Idle Staging Hosts  \n**Severity:** Medium",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "cost_anomaly_rightsizer.md",
+      "source": "cost_anomaly_rightsizer",
+      "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+      "section": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+      "word_count": 32
+    }
+  },
+  {
+    "chunk_id": "cost_anomaly_rightsizer_sec_1",
+    "doc_id": "cost_anomaly_rightsizer",
+    "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+    "section": "1. Symptom Profile",
+    "text": "## 1. Symptom Profile\n- Unexpected spike in daily or monthly projected infrastructure spend (> 20% over 30-day baseline).\n- Cost recommendation engine flags instances with sustained low utilization (< 10% CPU and memory) over 7+ days.\n- Orphaned cloud assets: Unattached EBS/persistent volumes, unassociated Elastic IPs, or idle load balancers.\n- Staging and development environments running 24/7 over non-business hours and weekends.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "cost_anomaly_rightsizer.md",
+      "source": "cost_anomaly_rightsizer",
+      "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+      "section": "1. Symptom Profile",
+      "word_count": 63
+    }
+  },
+  {
+    "chunk_id": "cost_anomaly_rightsizer_sec_2",
+    "doc_id": "cost_anomaly_rightsizer",
+    "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+    "section": "2. Root Cause Classification",
+    "text": "## 2. Root Cause Classification\n- **Over-Provisioned Instance SKU:** Workload running on larger instance size (e.g. `c5.4xlarge`) than required by actual CPU/RAM peaks.\n- **Abandoned Test Bench / Proof-of-Concept:** Temporary benchmarking instances left running indefinitely after project completion.\n- **Continuous Runaway Auto-Scaling:** Faulty scale-down policy preventing replica reduction after traffic peak passes.\n- **Unattached Storage Volumes:** Storage volumes retained after instance termination without retention justification.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "cost_anomaly_rightsizer.md",
+      "source": "cost_anomaly_rightsizer",
+      "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+      "section": "2. Root Cause Classification",
+      "word_count": 65
+    }
+  },
+  {
+    "chunk_id": "cost_anomaly_rightsizer_sec_3",
+    "doc_id": "cost_anomaly_rightsizer",
+    "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+    "section": "3. Immediate Diagnostic Commands",
+    "text": "## 3. Immediate Diagnostic Commands\n```bash",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "cost_anomaly_rightsizer.md",
+      "source": "cost_anomaly_rightsizer",
+      "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+      "section": "3. Immediate Diagnostic Commands",
+      "word_count": 6
+    }
+  },
+  {
+    "chunk_id": "cost_anomaly_rightsizer_sec_4",
+    "doc_id": "cost_anomaly_rightsizer",
+    "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+    "section": "Query active CloudOps Intel Cost Optimization recommendations",
+    "text": "# Query active CloudOps Intel Cost Optimization recommendations\nSELECT host_id, recommendation_type, current_cost_usd, recommended_cost_usd, estimated_monthly_savings_usd \nFROM cost_recommendations \nWHERE status = 'open' \nORDER BY estimated_monthly_savings_usd DESC;",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "cost_anomaly_rightsizer.md",
+      "source": "cost_anomaly_rightsizer",
+      "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+      "section": "Query active CloudOps Intel Cost Optimization recommendations",
+      "word_count": 24
+    }
+  },
+  {
+    "chunk_id": "cost_anomaly_rightsizer_sec_5",
+    "doc_id": "cost_anomaly_rightsizer",
+    "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+    "section": "Identify candidate instances with average CPU < 10% over last 7 days",
+    "text": "# Identify candidate instances with average CPU < 10% over last 7 days\nSELECT host_id, AVG(cpu_percent) as avg_cpu \nFROM metrics \nWHERE timestamp >= datetime('now', '-7 days') \nGROUP BY host_id \nHAVING avg_cpu < 10.0;\n```",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "cost_anomaly_rightsizer.md",
+      "source": "cost_anomaly_rightsizer",
+      "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+      "section": "Identify candidate instances with average CPU < 10% over last 7 days",
+      "word_count": 34
+    }
+  },
+  {
+    "chunk_id": "cost_anomaly_rightsizer_sec_6",
+    "doc_id": "cost_anomaly_rightsizer",
+    "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+    "section": "4. Remediation Steps",
+    "text": "## 4. Remediation Steps\n1. **Downsize Over-Provisioned Compute:**\n   - Review workload peak usage and resize instances (e.g., migrate from `t3.large` to `t3.medium`).\n2. **Schedule Automated Off-Hours Shutdown:**\n   - Configure cron/lambda schedules to stop development and staging instances outside business hours (08:00\u201318:00 Mon\u2013Fri) to save ~65% monthly run rate.\n3. **Purge Orphaned Storage Volumes:**\n   - Snapshot and delete unattached volumes older than 14 days.\n4. **Implement AWS/GCP Budget Alerts:**\n   - Establish automated spending threshold alerts at 80%, 100%, and 120% of monthly budget forecast.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "cost_anomaly_rightsizer.md",
+      "source": "cost_anomaly_rightsizer",
+      "title": "SRE Runbook: Cloud Cost Anomalies & Idle Resource Rightsizing",
+      "section": "4. Remediation Steps",
+      "word_count": 83
+    }
+  },
+  {
+    "chunk_id": "disk_exhaustion_wal_sec_0",
+    "doc_id": "disk_exhaustion_wal",
+    "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+    "section": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+    "text": "# SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation\n\n**ID:** `RUNBOOK-DISK-003`  \n**Domain:** Storage & Database Reliability  \n**Applies To:** SQLite Databases, Log Partitions, System Root Drives  \n**Severity:** Critical",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "disk_exhaustion_wal.md",
+      "source": "disk_exhaustion_wal",
+      "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+      "section": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+      "word_count": 28
+    }
+  },
+  {
+    "chunk_id": "disk_exhaustion_wal_sec_1",
+    "doc_id": "disk_exhaustion_wal",
+    "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+    "section": "1. Symptom Profile",
+    "text": "## 1. Symptom Profile\n- Available disk space on partition drops below 10% or triggers `disk_percent > 90%` alert.\n- Database write operations fail with `sqlite3.OperationalError: database or disk is full` or `I/O error`.\n- SQLite Write-Ahead Log (`cloud_intelligence.db-wal`) grows into hundreds of megabytes or gigabytes without checkpointing.\n- Log rotation failures causing `/var/log` or application log directory bloating.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "disk_exhaustion_wal.md",
+      "source": "disk_exhaustion_wal",
+      "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+      "section": "1. Symptom Profile",
+      "word_count": 59
+    }
+  },
+  {
+    "chunk_id": "disk_exhaustion_wal_sec_2",
+    "doc_id": "disk_exhaustion_wal",
+    "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+    "section": "2. Root Cause Classification",
+    "text": "## 2. Root Cause Classification\n- **Uncheckpointed WAL File:** Long-running read transactions holding open database locks, preventing SQLite WAL autocheckpoint.\n- **Runaway Log Files:** Verbose `DEBUG` logging active in production without log rotation / retention limits.\n- **Orphaned Temporary / Export Files:** Uncleaned scratch files, failed bulk import artifacts, or temporary crash dumps.\n- **Log Archival Failure:** Backups or log shippers stalling and causing local queues to back up onto primary volumes.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "disk_exhaustion_wal.md",
+      "source": "disk_exhaustion_wal",
+      "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+      "section": "2. Root Cause Classification",
+      "word_count": 72
+    }
+  },
+  {
+    "chunk_id": "disk_exhaustion_wal_sec_3",
+    "doc_id": "disk_exhaustion_wal",
+    "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+    "section": "3. Immediate Diagnostic Commands",
+    "text": "## 3. Immediate Diagnostic Commands\n```bash",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "disk_exhaustion_wal.md",
+      "source": "disk_exhaustion_wal",
+      "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+      "section": "3. Immediate Diagnostic Commands",
+      "word_count": 6
+    }
+  },
+  {
+    "chunk_id": "disk_exhaustion_wal_sec_4",
+    "doc_id": "disk_exhaustion_wal",
+    "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+    "section": "Check filesystem free space and inode exhaustion",
+    "text": "# Check filesystem free space and inode exhaustion\ndf -h\ndf -i",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "disk_exhaustion_wal.md",
+      "source": "disk_exhaustion_wal",
+      "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+      "section": "Check filesystem free space and inode exhaustion",
+      "word_count": 12
+    }
+  },
+  {
+    "chunk_id": "disk_exhaustion_wal_sec_5",
+    "doc_id": "disk_exhaustion_wal",
+    "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+    "section": "Find top 10 largest directories in application path",
+    "text": "# Find top 10 largest directories in application path\ndu -ah /path/to/app | sort -rh | head -n 10",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "disk_exhaustion_wal.md",
+      "source": "disk_exhaustion_wal",
+      "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+      "section": "Find top 10 largest directories in application path",
+      "word_count": 19
+    }
+  },
+  {
+    "chunk_id": "disk_exhaustion_wal_sec_6",
+    "doc_id": "disk_exhaustion_wal",
+    "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+    "section": "On Windows PowerShell:",
+    "text": "# On Windows PowerShell:\nGet-PSDrive -PSProvider FileSystem | Select-Object Name, Used, Free, @{Name=\"PercentFree\";Expression={[math]::Round($_.Free/($_.Used+$_.Free)*100,2)}}\nGet-ChildItem -Path C:\\CLoudProject -Recurse -File -ErrorAction SilentlyContinue | Sort-Object Length -Descending | Select-Object -First 10 -Property FullName, Length\n```",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "disk_exhaustion_wal.md",
+      "source": "disk_exhaustion_wal",
+      "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+      "section": "On Windows PowerShell:",
+      "word_count": 32
+    }
+  },
+  {
+    "chunk_id": "disk_exhaustion_wal_sec_7",
+    "doc_id": "disk_exhaustion_wal",
+    "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+    "section": "4. Remediation Steps",
+    "text": "## 4. Remediation Steps\n1. **Force SQLite WAL Checkpoint:**\n   - Execute an explicit passive or truncate checkpoint against the database:\n     `PRAGMA wal_checkpoint(TRUNCATE);`\n2. **Purge Rotated & Expired Logs:**\n   - Compress or remove `.log.1`, `.log.2`, or logs older than retention policy (e.g., > 14 days).\n3. **Verify Open Database File Handles:**\n   - Ensure background tasks and connection pools close cursor transactions promptly.\n4. **Provision Emergency Volume Expansion:**\n   - If disk growth is legitimate due to telemetry ingestion rates, expand disk volume or configure metric downsampling.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "disk_exhaustion_wal.md",
+      "source": "disk_exhaustion_wal",
+      "title": "SRE Runbook: Storage Exhaustion & Database WAL Log Accumulation",
+      "section": "4. Remediation Steps",
+      "word_count": 84
+    }
+  },
+  {
+    "chunk_id": "high_cpu_saturation_sec_0",
+    "doc_id": "high_cpu_saturation",
+    "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+    "section": "SRE Runbook: High CPU Saturation & Process Starvation",
+    "text": "# SRE Runbook: High CPU Saturation & Process Starvation\n\n**ID:** `RUNBOOK-CPU-001`  \n**Domain:** Performance & Capacity  \n**Applies To:** Linux/Windows Hosts, API Gateways, Microservices, Lab PCs  \n**Severity:** High to Critical",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "high_cpu_saturation.md",
+      "source": "high_cpu_saturation",
+      "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+      "section": "SRE Runbook: High CPU Saturation & Process Starvation",
+      "word_count": 28
+    }
+  },
+  {
+    "chunk_id": "high_cpu_saturation_sec_1",
+    "doc_id": "high_cpu_saturation",
+    "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+    "section": "1. Symptom Profile",
+    "text": "## 1. Symptom Profile\n- Host CPU utilization sustained above 85% for more than 5 minutes.\n- Elevated system load average exceeding the number of physical CPU cores.\n- Thread starvation causing request timeouts, HTTP 504 Gateway Timeouts, or sluggish agent telemetry check-ins.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "high_cpu_saturation.md",
+      "source": "high_cpu_saturation",
+      "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+      "section": "1. Symptom Profile",
+      "word_count": 43
+    }
+  },
+  {
+    "chunk_id": "high_cpu_saturation_sec_2",
+    "doc_id": "high_cpu_saturation",
+    "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+    "section": "2. Root Cause Classification",
+    "text": "## 2. Root Cause Classification\n- **Thread Loop / Uncontrolled Recursion:** Application bug executing tight spin-locks or unoptimized nested iterations.\n- **Garbage Collection / JIT Thrashing:** High memory churn triggering perpetual stop-the-world or heavy background GC.\n- **Crypto-Mining / Rogue Worker Process:** Unauthorized execution or orphaned background jobs consuming 100% of single/multi cores.\n- **Sudden Traffic Spike:** Legitimate surge in inbound API requests without horizontal autoscaling triggers.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "high_cpu_saturation.md",
+      "source": "high_cpu_saturation",
+      "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+      "section": "2. Root Cause Classification",
+      "word_count": 67
+    }
+  },
+  {
+    "chunk_id": "high_cpu_saturation_sec_3",
+    "doc_id": "high_cpu_saturation",
+    "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+    "section": "3. Immediate Diagnostic Commands",
+    "text": "## 3. Immediate Diagnostic Commands\n```bash",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "high_cpu_saturation.md",
+      "source": "high_cpu_saturation",
+      "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+      "section": "3. Immediate Diagnostic Commands",
+      "word_count": 6
+    }
+  },
+  {
+    "chunk_id": "high_cpu_saturation_sec_4",
+    "doc_id": "high_cpu_saturation",
+    "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+    "section": "Identify top 5 CPU-consuming processes on Linux",
+    "text": "# Identify top 5 CPU-consuming processes on Linux\nps aux --sort=-%cpu | head -n 6",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "high_cpu_saturation.md",
+      "source": "high_cpu_saturation",
+      "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+      "section": "Identify top 5 CPU-consuming processes on Linux",
+      "word_count": 15
+    }
+  },
+  {
+    "chunk_id": "high_cpu_saturation_sec_5",
+    "doc_id": "high_cpu_saturation",
+    "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+    "section": "Check per-core CPU utilization breakdown (user, system, iowait)",
+    "text": "# Check per-core CPU utilization breakdown (user, system, iowait)\nmpstat -P ALL 1 3",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "high_cpu_saturation.md",
+      "source": "high_cpu_saturation",
+      "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+      "section": "Check per-core CPU utilization breakdown (user, system, iowait)",
+      "word_count": 14
+    }
+  },
+  {
+    "chunk_id": "high_cpu_saturation_sec_6",
+    "doc_id": "high_cpu_saturation",
+    "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+    "section": "On Windows PowerShell:",
+    "text": "# On Windows PowerShell:\nGet-Process | Sort-Object CPU -Descending | Select-Object -First 5 -Property Id, ProcessName, CPU, WorkingSet\n```",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "high_cpu_saturation.md",
+      "source": "high_cpu_saturation",
+      "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+      "section": "On Windows PowerShell:",
+      "word_count": 19
+    }
+  },
+  {
+    "chunk_id": "high_cpu_saturation_sec_7",
+    "doc_id": "high_cpu_saturation",
+    "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+    "section": "4. Remediation Steps",
+    "text": "## 4. Remediation Steps\n1. **Targeted Process Intervention:**\n   - If a rogue or non-critical process is identified, gracefully signal or terminate:\n     `kill -15 <PID>` (or `Stop-Process -Id <PID> -Force` on Windows).\n2. **Workload Throttle / Rate Limiting:**\n   - Activate API rate limits or shed load at the Caddy proxy level using header rate limiting.\n3. **Horizontal or Vertical Autoscaling:**\n   - Provision additional worker replicas or upgrade the instance type if steady-state demand exceeds capacity.\n4. **Agent Telemetry Verification:**\n   - Confirm agent CPU returns to baseline below 65% in the CloudOps Intel Telemetry stream.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "high_cpu_saturation.md",
+      "source": "high_cpu_saturation",
+      "title": "SRE Runbook: High CPU Saturation & Process Starvation",
+      "section": "4. Remediation Steps",
+      "word_count": 93
+    }
+  },
+  {
+    "chunk_id": "lab_pc_sensor_offline_sec_0",
+    "doc_id": "lab_pc_sensor_offline",
+    "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+    "section": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+    "text": "# SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline\n\n**ID:** `RUNBOOK-LAB-005`  \n**Domain:** IoT & Lab Device Management  \n**Applies To:** Computer Labs, Edge PCs, Local Hardware Agents, Monitoring Daemons  \n**Severity:** Medium to High",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "lab_pc_sensor_offline.md",
+      "source": "lab_pc_sensor_offline",
+      "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+      "section": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+      "word_count": 34
+    }
+  },
+  {
+    "chunk_id": "lab_pc_sensor_offline_sec_1",
+    "doc_id": "lab_pc_sensor_offline",
+    "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+    "section": "1. Symptom Profile",
+    "text": "## 1. Symptom Profile\n- Lab PC status transitions to `offline` or `unreachable` in the Device Management dashboard.\n- Last heartbeat timestamp exceeds tolerance threshold (> 5 minutes without check-in).\n- Local sensor metrics (temperature, fan speed, GPU state, power draw) cease updating.\n- Room or rack-level environmental telemetry displays gaps or missing telemetry points.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "lab_pc_sensor_offline.md",
+      "source": "lab_pc_sensor_offline",
+      "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+      "section": "1. Symptom Profile",
+      "word_count": 55
+    }
+  },
+  {
+    "chunk_id": "lab_pc_sensor_offline_sec_2",
+    "doc_id": "lab_pc_sensor_offline",
+    "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+    "section": "2. Root Cause Classification",
+    "text": "## 2. Root Cause Classification\n- **Host Sleep / Power State Transition:** Windows or Linux machine entering unexpected S3 Sleep, Hibernation, or Fast Startup shutdown.\n- **Local Network Disconnection:** Physical Ethernet cable unplugged, switch port flapping, or local DHCP lease renewal failure.\n- **Daemon Crash / Service Stopped:** CloudOps local hardware agent service terminated due to unhandled OS exception or auto-update reboot.\n- **Firewall / Port Egress Block:** Local host firewall (Windows Defender Firewall) blocking outbound HTTP/HTTPS telemetry push to Caddy/FastAPI backend on port 8000/8443.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "lab_pc_sensor_offline.md",
+      "source": "lab_pc_sensor_offline",
+      "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+      "section": "2. Root Cause Classification",
+      "word_count": 85
+    }
+  },
+  {
+    "chunk_id": "lab_pc_sensor_offline_sec_3",
+    "doc_id": "lab_pc_sensor_offline",
+    "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+    "section": "3. Immediate Diagnostic Commands",
+    "text": "## 3. Immediate Diagnostic Commands\n```powershell",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "lab_pc_sensor_offline.md",
+      "source": "lab_pc_sensor_offline",
+      "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+      "section": "3. Immediate Diagnostic Commands",
+      "word_count": 6
+    }
+  },
+  {
+    "chunk_id": "lab_pc_sensor_offline_sec_4",
+    "doc_id": "lab_pc_sensor_offline",
+    "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+    "section": "Check Windows service status of local telemetry agent",
+    "text": "# Check Windows service status of local telemetry agent\nGet-Service -Name \"CloudOpsAgent*\"",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "lab_pc_sensor_offline.md",
+      "source": "lab_pc_sensor_offline",
+      "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+      "section": "Check Windows service status of local telemetry agent",
+      "word_count": 12
+    }
+  },
+  {
+    "chunk_id": "lab_pc_sensor_offline_sec_5",
+    "doc_id": "lab_pc_sensor_offline",
+    "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+    "section": "Verify network reachability to CloudOps Intel API",
+    "text": "# Verify network reachability to CloudOps Intel API\nTest-NetConnection -ComputerName 127.0.0.1 -Port 8000\nTest-NetConnection -ComputerName 127.0.0.1 -Port 8443",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "lab_pc_sensor_offline.md",
+      "source": "lab_pc_sensor_offline",
+      "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+      "section": "Verify network reachability to CloudOps Intel API",
+      "word_count": 18
+    }
+  },
+  {
+    "chunk_id": "lab_pc_sensor_offline_sec_6",
+    "doc_id": "lab_pc_sensor_offline",
+    "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+    "section": "Check recent Windows Event Log for sudden shutdowns or power events",
+    "text": "# Check recent Windows Event Log for sudden shutdowns or power events\nGet-WinEvent -FilterHashtable @{LogName='System'; Id=41,1074,6008} -MaxEvents 5\n```",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "lab_pc_sensor_offline.md",
+      "source": "lab_pc_sensor_offline",
+      "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+      "section": "Check recent Windows Event Log for sudden shutdowns or power events",
+      "word_count": 19
+    }
+  },
+  {
+    "chunk_id": "lab_pc_sensor_offline_sec_7",
+    "doc_id": "lab_pc_sensor_offline",
+    "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+    "section": "4. Remediation Steps",
+    "text": "## 4. Remediation Steps\n1. **Restart Local Agent Service:**\n   - Restart the telemetry daemon on target Lab PC:\n     `Restart-Service -Name \"CloudOpsAgent\" -Force`\n2. **Disable Aggressive Power-Saving:**\n   - Configure OS power profile to high performance and disable network adapter sleep on idle:\n     `powercfg /change standby-timeout-ac 0`\n     `powercfg /change hibernate-timeout-ac 0`\n3. **Validate Ingestion Key Credentials:**\n   - Ensure `AGENT_INGESTION_KEY` configured in local agent matches backend configuration in `.env`.\n4. **Resynchronize Sensor Inventory:**\n   - Trigger a manual hardware discovery scan from Device Management dashboard to refresh hardware topology.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "lab_pc_sensor_offline.md",
+      "source": "lab_pc_sensor_offline",
+      "title": "SRE Runbook: Lab PC & Edge Hardware Sensor Telemetry Offline",
+      "section": "4. Remediation Steps",
+      "word_count": 85
+    }
+  },
+  {
+    "chunk_id": "memory_leak_oom_sec_0",
+    "doc_id": "memory_leak_oom",
+    "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+    "section": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+    "text": "# SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation\n\n**ID:** `RUNBOOK-MEM-002`  \n**Domain:** Performance & Reliability  \n**Applies To:** Backend Application Nodes, Worker Pods, Python/Node/Java Runtimes  \n**Severity:** Critical",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "memory_leak_oom.md",
+      "source": "memory_leak_oom",
+      "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+      "section": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+      "word_count": 26
+    }
+  },
+  {
+    "chunk_id": "memory_leak_oom_sec_1",
+    "doc_id": "memory_leak_oom",
+    "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+    "section": "1. Symptom Profile",
+    "text": "## 1. Symptom Profile\n- Monotonically increasing memory usage (RAM / Swap) over time without recovery after request completion.\n- Kernel OOM Killer events logged (`dmesg` or system event log) terminating processes unexpectedly.\n- Sudden container crash restarts (Exit Code 137).\n- Persistent memory alerts triggered in CloudOps Intel dashboard (`memory_percent > 85%`).",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "memory_leak_oom.md",
+      "source": "memory_leak_oom",
+      "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+      "section": "1. Symptom Profile",
+      "word_count": 53
+    }
+  },
+  {
+    "chunk_id": "memory_leak_oom_sec_2",
+    "doc_id": "memory_leak_oom",
+    "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+    "section": "2. Root Cause Classification",
+    "text": "## 2. Root Cause Classification\n- **Application Cache Accumulation:** In-memory LRU caches or dictionaries growing unbounded without TTL or size eviction.\n- **Unclosed Connections / File Descriptors:** Database cursor leaks, unclosed HTTP client sessions, or dangling WebSocket connections.\n- **Circular References / Object Retention:** Long-lived event listeners or module-level lists retaining garbage-collected objects.\n- **Buffer Bloat:** Large in-memory file buffering during telemetry batch imports or export report generations.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "memory_leak_oom.md",
+      "source": "memory_leak_oom",
+      "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+      "section": "2. Root Cause Classification",
+      "word_count": 68
+    }
+  },
+  {
+    "chunk_id": "memory_leak_oom_sec_3",
+    "doc_id": "memory_leak_oom",
+    "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+    "section": "3. Immediate Diagnostic Commands",
+    "text": "## 3. Immediate Diagnostic Commands\n```bash",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "memory_leak_oom.md",
+      "source": "memory_leak_oom",
+      "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+      "section": "3. Immediate Diagnostic Commands",
+      "word_count": 6
+    }
+  },
+  {
+    "chunk_id": "memory_leak_oom_sec_4",
+    "doc_id": "memory_leak_oom",
+    "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+    "section": "Check memory breakdown and swap status",
+    "text": "# Check memory breakdown and swap status\nfree -m\nvmstat 1 5",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "memory_leak_oom.md",
+      "source": "memory_leak_oom",
+      "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+      "section": "Check memory breakdown and swap status",
+      "word_count": 12
+    }
+  },
+  {
+    "chunk_id": "memory_leak_oom_sec_5",
+    "doc_id": "memory_leak_oom",
+    "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+    "section": "Inspect top memory-consuming processes",
+    "text": "# Inspect top memory-consuming processes\nps aux --sort=-%mem | head -n 6",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "memory_leak_oom.md",
+      "source": "memory_leak_oom",
+      "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+      "section": "Inspect top memory-consuming processes",
+      "word_count": 12
+    }
+  },
+  {
+    "chunk_id": "memory_leak_oom_sec_6",
+    "doc_id": "memory_leak_oom",
+    "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+    "section": "Check system logs for kernel OOM killer triggers",
+    "text": "# Check system logs for kernel OOM killer triggers\ndmesg -T | grep -i \"killed process\"",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "memory_leak_oom.md",
+      "source": "memory_leak_oom",
+      "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+      "section": "Check system logs for kernel OOM killer triggers",
+      "word_count": 16
+    }
+  },
+  {
+    "chunk_id": "memory_leak_oom_sec_7",
+    "doc_id": "memory_leak_oom",
+    "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+    "section": "On Windows:",
+    "text": "# On Windows:\nGet-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 5 -Property Id, ProcessName, WorkingSet64\n```",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "memory_leak_oom.md",
+      "source": "memory_leak_oom",
+      "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+      "section": "On Windows:",
+      "word_count": 17
+    }
+  },
+  {
+    "chunk_id": "memory_leak_oom_sec_8",
+    "doc_id": "memory_leak_oom",
+    "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+    "section": "4. Remediation Steps",
+    "text": "## 4. Remediation Steps\n1. **Graceful Service Restart:**\n   - Drain active requests and cycle the worker processes to release heap memory:\n     `systemctl restart cloudops-backend` or `Restart-Service CloudOpsBackend`.\n2. **Increase Swap Headroom (Temporary Buffer):**\n   - Ensure swap is active to prevent immediate kernel OOM while investigating heap dumps.\n3. **Inspect Application Heap Profile:**\n   - Capture memory allocations using `tracemalloc` (Python) or heap snapshot tools to locate leaking data structures.\n4. **Tune Worker Recycling:**\n   - Configure process manager max-requests lifecycle (e.g. Uvicorn `--limit-max-requests 5000`) to periodically refresh worker memory footprint.",
+    "metadata": {
+      "type": "runbook",
+      "file_name": "memory_leak_oom.md",
+      "source": "memory_leak_oom",
+      "title": "SRE Runbook: Memory Leak & Out-of-Memory (OOM) Degradation",
+      "section": "4. Remediation Steps",
+      "word_count": 88
+    }
+  }
+]
