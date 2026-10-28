@@ -95,6 +95,22 @@ def submit_metrics(
 
     device_uuid = agent_info.get("device_uuid")
     if device_uuid:
+        from sqlalchemy import select
+        from backend.app.models.device import DeviceEnrollment
+        dev_rec = db.scalar(select(DeviceEnrollment).where(DeviceEnrollment.device_uuid == device_uuid))
+        if dev_rec and dev_rec.assigned_name:
+            if isinstance(payload, MetricBatchCreate):
+                for m in payload.metrics:
+                    m.hostname = dev_rec.assigned_name
+                    m.environment = "lab"
+                    if dev_rec.room_number:
+                        m.region = dev_rec.room_number
+            else:
+                payload.hostname = dev_rec.assigned_name
+                payload.environment = "lab"
+                if dev_rec.room_number:
+                    payload.region = dev_rec.room_number
+
         from backend.app.services.device_service import update_device_telemetry_heartbeat
         sample_time = None
         if isinstance(payload, MetricBatchCreate) and payload.metrics:

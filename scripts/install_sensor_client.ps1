@@ -135,70 +135,41 @@ $TaskName = "CloudOpsSensorAgent"
 Write-Host ""
 Write-Host "[*] Configuring Windows Scheduled Task: $TaskName..." -ForegroundColor Cyan
 
-# Unregister old task if exists
-schtasks.exe /Delete /TN $TaskName /F 2>$null
-
-$taskAction = "`"$PythonExe`" `"$agentScript`" --config `"$configFile`" --spool-db `"$spoolDb`""
-
-# Create task to run at startup under SYSTEM (or current user if not admin)
-if ($isAdmin) {
-    $xmlTask = @"
-<?xml version="1.0" encoding="UTF-16"?>
-<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-  <RegistrationInfo>
-    <Description>CloudOps Intel Workstation Telemetry Sensor Daemon</Description>
-    <Author>CloudOps Intel</Author>
-  </RegistrationInfo>
-  <Triggers>
-    <BootTrigger>
-      <Enabled>true</Enabled>
-    </BootTrigger>
-  </Triggers>
-  <Principals>
-    <Principal id="Author">
-      <UserId>S-1-5-18</UserId>
-      <RunLevel>HighestAvailable</RunLevel>
-    </Principal>
-  </Principals>
-  <Settings>
-    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
-    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
-    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
-    <AllowHardTerminate>true</AllowHardTerminate>
-    <StartWhenAvailable>true</StartWhenAvailable>
-    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
-    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
-    <Priority>7</Priority>
-    <RestartOnFailure>
-      <Interval>PT1M</Interval>
-      <Count>3</Count>
-    </RestartOnFailure>
-  </Settings>
-  <Actions Context="Author">
-    <Exec>
-      <Command>$PythonExe</Command>
-      <Arguments>`"$agentScript`" --config `"$configFile`" --spool-db `"$spoolDb`"</Arguments>
-      <WorkingDirectory>$InstallDir</WorkingDirectory>
-    </Exec>
-  </Actions>
-</Task>
-"@
-    $xmlPath = Join-Path $InstallDir "task_def.xml"
-    [System.IO.File]::WriteAllText($xmlPath, $xmlTask, [System.Text.Encoding]::Unicode)
-    schtasks.exe /Create /TN $TaskName /XML $xmlPath /F | Out-Null
-    Remove-Item $xmlPath -Force
-} else {
-    # Non-admin fallback trigger at logon
-    schtasks.exe /Create /TN $TaskName /TR $taskAction /SC ONLOGON /F | Out-Null
+# Unregister old task if exists (safely ignore if it doesn't exist)
+try {
+    $existing = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    if ($existing) {
+        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue | Out-Null
+    }
+} catch {
+    # Non-fatal if task does not exist
 }
 
-Write-Host "[+] Registered Windows Scheduled Task: $TaskName (Auto-start on boot)" -ForegroundColor Green
+$taskArguments = "`"$agentScript`" --config `"$configFile`" --spool-db `"$spoolDb`""
 
-# 9. Start the background sensor task
-schtasks.exe /Run /TN $TaskName | Out-Null
-Write-Host "[+] Started $TaskName background service." -ForegroundColor Green
+try {
+    $action = New-ScheduledTaskAction -Execute $PythonExe -Argument $taskArguments -WorkingDirectory $InstallDir
+    $trigger = New-ScheduledTaskTrigger -AtLogOn
+    Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Force -ErrorAction SilentlyContinue | Out-Null
+    Write-Host "[+] Registered Windows Scheduled Task: $TaskName (Auto-start on logon)" -ForegroundColor Green
+} catch {
+    Write-Warning "Scheduled task registration notice: $_"
+}
+
+# 9. Launch background sensor worker immediately (Hidden, Zero-UI)
+Write-Host "[*] Launching background sensor telemetry worker..." -ForegroundColor Cyan
+$procArgs = @(
+    "`"$agentScript`"",
+    "--config",
+    "`"$configFile`"",
+    "--spool-db",
+    "`"$spoolDb`""
+)
+Start-Process -FilePath $PythonExe -ArgumentList $procArgs -WorkingDirectory $InstallDir -WindowStyle Hidden
+
+Write-Host "[+] Started $TaskName background worker." -ForegroundColor Green
 Write-Host ""
 Write-Host "==========================================================" -ForegroundColor Green
-Write-Host " Sensor Agent Installed Successfully!                     " -ForegroundColor Green
-Write-Host " Continuous telemetry will be pushed via verified HTTPS.   " -ForegroundColor Green
+Write-Host " Sensor Agent Installed and Running Successfully!         " -ForegroundColor Green
+Write-Host " Continuous telemetry is now streaming to the server.     " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green

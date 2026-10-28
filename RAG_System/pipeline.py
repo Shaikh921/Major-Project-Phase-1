@@ -112,6 +112,14 @@ class RAGPipeline:
         """
         Executes an end-to-end RAG incident investigation query.
         """
+        # Sanitize query and time window edge cases
+        cleaned_query = (query or "").strip()
+        if not cleaned_query:
+            cleaned_query = "Operational status and infrastructure incident triage overview."
+        elif len(cleaned_query) > 2000:
+            cleaned_query = cleaned_query[:2000]
+
+        time_window_minutes = max(1, min(time_window_minutes, 10080))
         now = datetime.now(timezone.utc)
         since_ts = now - timedelta(minutes=time_window_minutes)
 
@@ -159,7 +167,7 @@ class RAGPipeline:
 
         # 3. Retrieve relevant chunks using hybrid BM25 + Dense search
         retrieved_chunks = self.retriever.retrieve(
-            query=query,
+            query=cleaned_query,
             top_k=rag_settings.TOP_K,
         )
 
@@ -207,7 +215,7 @@ class RAGPipeline:
 
         # 5. Augment Context
         augmented = self.context_builder.build_context(
-            query=query,
+            query=cleaned_query,
             retrieved_chunks=retrieved_chunks,
             live_signals=live_signal_data,
             time_window_minutes=time_window_minutes,

@@ -1,0 +1,63 @@
+========================================================================
+ CLOUDOPS INTEL SENSOR AGENT - CLIENT PC INSTALLATION & COMMANDS
+========================================================================
+
+------------------------------------------------------------------------
+FAST SETUP (ONE-CLICK INSTALLATION):
+------------------------------------------------------------------------
+1. Click Windows Start -> Search "PowerShell" -> Right-click "Run as administrator".
+2. Navigate to this folder:
+   cd "$HOME\Desktop\cloudops-sensor-package"
+   (Or: cd "C:\Temp\cloudops-sensor")
+
+3. Run the installer:
+powershell -ExecutionPolicy Bypass -File .\install_sensor_client.ps1 -ServerUrl "https://10.1.250.95:8443" -EnrollmentCode "<PASTE_ENROLLMENT_CODE_HERE>"
+
+4. In the Server Dashboard (https://10.1.250.95:8443):
+   Go to: Administration -> Device Management -> Pending Approval.
+   Click "Approve & Map", assign Lab Room and PC name, click Approve.
+
+   The installer will automatically register the startup task and launch 
+   the background telemetry service!
+
+
+------------------------------------------------------------------------
+HOW TO START THE SENSOR IN BACKGROUND (HIDDEN / ZERO-UI):
+------------------------------------------------------------------------
+If you ever need to manually launch the sensor in the background:
+
+Start-Process -FilePath "C:\Users\MGM\AppData\Local\Programs\Python\Python314\python.exe" `
+    -ArgumentList "`"C:\ProgramData\CloudOpsIntel\Sensor\monitoring_agent\agent.py`" --config `"C:\ProgramData\CloudOpsIntel\Sensor\sensor_config.json`" --spool-db `"C:\ProgramData\CloudOpsIntel\Sensor\sensor_spool.db`"" `
+    -WorkingDirectory "C:\ProgramData\CloudOpsIntel\Sensor" `
+    -WindowStyle Hidden
+
+
+------------------------------------------------------------------------
+HOW TO REGISTER / RE-REGISTER WINDOWS STARTUP TASK:
+------------------------------------------------------------------------
+$action = New-ScheduledTaskAction -Execute "C:\Users\MGM\AppData\Local\Programs\Python\Python314\python.exe" `
+    -Argument "`"C:\ProgramData\CloudOpsIntel\Sensor\monitoring_agent\agent.py`" --config `"C:\ProgramData\CloudOpsIntel\Sensor\sensor_config.json`" --spool-db `"C:\ProgramData\CloudOpsIntel\Sensor\sensor_spool.db`"" `
+    -WorkingDirectory "C:\ProgramData\CloudOpsIntel\Sensor"
+
+$trigger = New-ScheduledTaskTrigger -AtLogOn
+Register-ScheduledTask -TaskName "CloudOpsSensorAgent" -Action $action -Trigger $trigger -Force
+
+
+------------------------------------------------------------------------
+VERIFICATION & DIAGNOSTIC COMMANDS:
+------------------------------------------------------------------------
+# 1. Check if background sensor process is running:
+Get-Process python
+
+# 2. Check scheduled startup task status:
+Get-ScheduledTask -TaskName "CloudOpsSensorAgent"
+
+# 3. Test connectivity to Server port 8443:
+Test-NetConnection 10.1.250.95 -Port 8443
+
+# 4. View live telemetry output in console (testing only):
+python "C:\ProgramData\CloudOpsIntel\Sensor\monitoring_agent\agent.py" --config "C:\ProgramData\CloudOpsIntel\Sensor\sensor_config.json"
+
+# 5. Cleanly uninstall sensor:
+powershell -ExecutionPolicy Bypass -File .\uninstall_sensor_client.ps1
+========================================================================

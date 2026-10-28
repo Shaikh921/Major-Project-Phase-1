@@ -80,6 +80,13 @@ def build_package():
     shutil.copy2(README_FILE, temp_build_dir / "README.md")
     print("    + README.md")
 
+    commands_file = PROJECT_ROOT / "HOW_TO_INSTALL_COMMANDS.txt"
+    if commands_file.exists():
+        shutil.copy2(commands_file, temp_build_dir / "HOW_TO_INSTALL_COMMANDS.txt")
+        shutil.copy2(commands_file, temp_build_dir / "COMMANDS.txt")
+        print("    + HOW_TO_INSTALL_COMMANDS.txt")
+        print("    + COMMANDS.txt")
+
     # 3. Copy public root.crt ONLY
     shutil.copy2(PUBLIC_CA_CERT, temp_build_dir / "root.crt")
     print("    + root.crt (Public Caddy Authority Certificate)")

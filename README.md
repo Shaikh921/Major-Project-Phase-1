@@ -6,19 +6,21 @@ An intelligent, multi-cloud observability, AI-driven anomaly detection, multi-cu
 
 ## 📋 Table of Contents
 - [✨ Key Features](#-key-features)
+- [📚 Official Documentation & PDF Guides](#-official-documentation--pdf-guides)
 - [🧩 Architecture & Implemented Modules](#-architecture--implemented-modules)
   - [Module 1: SVG Vector Design System](#module-1-svg-vector-design-system)
   - [Module 2: Multi-Currency Conversion Engine](#module-2-multi-currency-conversion-engine)
   - [Module 3: RBAC & Super Admin Lifecycle](#module-3-rbac--super-admin-lifecycle)
   - [Module 4: Production SMTP & Email Notification System](#module-4-production-smtp--email-notification-system)
+  - [Module 5: RAG-Augmented SRE Incident Intelligence Engine](#module-5-rag-augmented-sre-incident-intelligence-engine)
 - [📁 Repository Structure](#-repository-structure)
 - [🚀 Quick Start Guide](#-quick-start-guide)
-- [🪟 Windows Services & Production Persistence (Phase 8B)](#-windows-services--production-persistence-phase-8b)
+- [🪟 Windows Services & Production Persistence](#-windows-services--production-persistence-phase-8b)
 - [🖥️ Step-by-Step Lab PC & Sensor Deployment Guide](#️-step-by-step-lab-pc--sensor-deployment-guide)
 - [🌐 Accessing Services & Dashboard](#-accessing-services--dashboard)
 - [🔒 Network Security & Agent Transport Architecture](#-network-security--agent-transport-architecture)
 - [📧 Email & SMTP Configuration Guide](#-email--smtp-configuration-guide)
-- [🧪 Running Tests & Regression Suite (149 Tests)](#-running-tests--regression-suite-149-tests)
+- [🧪 Running Tests & Regression Suite](#-running-tests--regression-suite-149-tests)
 - [🐳 Running with Docker](#-running-with-docker)
 - [📄 License](#-license)
 
@@ -33,7 +35,20 @@ An intelligent, multi-cloud observability, AI-driven anomaly detection, multi-cu
 - **📧 Production SMTP & Email Notification Engine**: STARTTLS/SSL delivery, responsive HTML + plaintext templates, anti-storm alert deduplication, and Super Admin live diagnostics.
 - **💱 Multi-Currency Cost Intelligence**: Real-time currency conversion (USD, EUR, GBP, JPY, CAD, AUD, INR, CHF) with base USD storage integrity and spend optimization.
 - **🎨 Vectorized Design System**: High-density dark SRE theme built exclusively with crisp SVG Lucide icons and responsive layout components.
-- **📝 Incident Synthesis & Narrator**: Auto-generated executive summaries and natural-language incident analysis.
+- **🤖 RAG-Augmented Incident Intelligence Engine**: Grounded incident root-cause analysis correlating live telemetry with SRE runbooks using Google Gemini.
+
+---
+
+## 📚 Official Documentation & PDF Guides
+
+The `docs/` directory contains complete, publication-grade technical guides and step-by-step manuals:
+
+| Document | Format | Description |
+| :--- | :--- | :--- |
+| [**Deployment Guide**](docs/DEPLOYMENT_GUIDE.pdf) | **PDF (Print-Ready)** | Complete step-by-step master server setup, network/firewall configuration, agent packaging, and zero-trust lab PC onboarding. |
+| [**Dashboard Feature Guide**](docs/DASHBOARD_FEATURE_GUIDE.pdf) | **PDF (Illustrated)** | Comprehensive guide covering all 16 views, widgets, ML models, RAG engine, and administrative workflows with embedded screenshots. |
+| [**Collegiate Deployment Checklist**](docs/lab-monitoring/COLLEGE_DEPLOYMENT_CHECKLIST.md) | Markdown | 4-section readiness audit for institutional IT departments and lab rollout. |
+| [**Network & TLS Architecture**](docs/lab-monitoring/NETWORK_AND_TLS_SETUP.md) | Markdown | TLS 1.3 reverse proxy configuration, certificate distribution, and port isolation rules. |
 
 ---
 
@@ -76,6 +91,14 @@ An intelligent, multi-cloud observability, AI-driven anomaly detection, multi-cu
   - SMTP Relay Diagnostic Test
 - **Super Admin SMTP Diagnostic Modal**: UI modal in Admin Management for real-time live connection tests with sanitized error reporting.
 
+### Module 5: RAG-Augmented SRE Incident Intelligence Engine
+- **Operational Runbook Indexing**: Structured semantic chunking of Markdown operational runbooks with symptom profiles, root-cause classifications, and diagnostic commands.
+- **Hybrid Retrieval (BM25 + Dense Vectors)**: Reciprocal Rank Fusion combining 768-dimensional dense vectors (`gemini-embedding-001`) with Okapi BM25 sparse lexical keyword search.
+- **Query Embedding LRU Cache**: Sub-millisecond (< 1ms) retrieval for repeated inquiries and preset incident investigations.
+- **Live Signal Augmentation & Deduplication**: Joins active cluster alerts, host hardware profiles, and security logs with automated chunk deduplication.
+- **Grounded Generative Reasoning**: Google Gemini Flash (`gemini-2.5-flash` / `gemini-3.5-flash-lite`) produces structured **Executive Observation**, **Grounded Evidence**, **Inferred Root Cause**, and copy-pasteable **Bash Diagnostic Commands**.
+- **Deterministic Offline Fallback**: Generates high-fidelity runbook extractions even when running completely disconnected from cloud APIs.
+
 ---
 
 ## 📁 Repository Structure
@@ -104,17 +127,31 @@ Cloud-Intelligence-Platform/
 │   │   └── app.js          # Core routing and view lifecycle orchestration
 │   └── index.html          # Main web application entry point
 │
+├── RAG_System/             # Grounded RAG Incident Intelligence Engine
+│   ├── chunking/           # Semantic runbook chunker & telemetry chunkers
+│   ├── embeddings/         # Gemini 768-dim embeddings with LRU query cache
+│   ├── vector_store/       # Persistent hybrid vector store & BM25 sparse index
+│   ├── retrieval/          # Reciprocal Rank Fusion hybrid retriever
+│   ├── augmentation/       # Multi-domain signal joiner & prompt context builder
+│   ├── generation/         # Gemini Flash LLM generator with deterministic fallback
+│   └── knowledge_base/     # Production SRE incident runbooks (.md)
+│
 ├── monitoring_agent/       # Telemetry collection & sliding window metric buffers
 ├── ai_engine/              # Isolation Forest, LSTM Autoencoders & forecasters
 ├── cost_engine/            # Cloud cost analysis, forecasting & anomaly detection
 ├── security_engine/        # Security posture, compliance checks & vulnerability scanning
 ├── narrator/               # Executive summaries & incident reporting engine
 │
-├── data/                   # Datasets (raw, processed, benchmarks & ground truth)
+├── data/                   # Datasets, RAG index persistence (embeddings.npy, store.json)
 ├── models/                 # Pretrained serialized ML models (.joblib, .pt)
-├── tests/                  # 81 comprehensive unit & integration test suites
-├── scripts/                # Data generators, fleet simulators & verification scripts
-├── docs/                   # Architecture, API specifications & design tokens
+├── tests/                  # Comprehensive unit, integration & edge-case test suites
+├── scripts/                # Fleet simulators, packaging, Windows services installers
+├── docs/                   # PDF Deployment/Feature guides, architecture, lab setup
+│   ├── DEPLOYMENT_GUIDE.pdf
+│   ├── DASHBOARD_FEATURE_GUIDE.pdf
+│   ├── figures/            # UI screenshots & diagrams
+│   ├── lab-monitoring/     # Network & institutional rollout specifications
+│   └── archive/            # Historical engineering audits & remediation logs
 │
 ├── .env.example            # Environment variables template with documentation
 ├── requirements.txt        # Python dependency manifest

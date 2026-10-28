@@ -30,22 +30,27 @@ class GeminiRAGGenerator:
     grounded strictly in retrieved runbook chunks and live telemetry.
     """
 
-    def __init__(self):
-        self.model_name = rag_settings.GEMINI_GENERATION_MODEL
+    def __init__(self, model_name: Optional[str] = None):
+        self.model_name = model_name or rag_settings.GEMINI_GENERATION_MODEL
         self._client = None
+        self._cached_api_key: Optional[str] = None
 
     def _get_client(self):
         rag_settings.refresh_key()
-        if rag_settings.IS_PLACEHOLDER_KEY:
+        current_key = rag_settings.GEMINI_API_KEY
+        if rag_settings.IS_PLACEHOLDER_KEY or not current_key:
             return None
-        if self._client is None:
+
+        # Re-initialize client if key has changed
+        if self._client is None or self._cached_api_key != current_key:
             try:
                 from google import genai
                 from google.genai import types
                 self._client = genai.Client(
-                    api_key=rag_settings.GEMINI_API_KEY,
+                    api_key=current_key,
                     http_options=types.HttpOptions(timeout=15000),
                 )
+                self._cached_api_key = current_key
             except Exception as e:
                 logger.warning("Could not initialize google.genai Client: %s", e)
                 return None
@@ -161,7 +166,7 @@ class GeminiRAGGenerator:
         """Extracts symptoms, root causes, remediation steps, and commands from runbook chunks."""
         symptoms, causes, recs, commands = [], [], [], []
         for chunk in chunks:
-            text = chunk.content
+            text = getattr(chunk, "content", None) or getattr(chunk, "text", "")
             current_sec = None
             in_code = False
             code_lines = []
@@ -219,7 +224,7 @@ class GeminiRAGGenerator:
         # Check if greeting inquiry
         user_prompt_lower = augmented.user_prompt.lower()
         first_line = user_prompt_lower.split("\n")[1].strip('" ') if "\n" in user_prompt_lower else user_prompt_lower
-        is_greeting = first_line in ["hi", "hii", "hello", "hey", "help", "good morning", "status"]
+        is_greeting = first_line in ["hi", "hii", "hello", "hey", "help", "who are you", "who are you?", "good morning", "status"]
 
         if is_greeting:
             observation = "CloudOps Intel RAG Incident Intelligence Agent is online and actively monitoring cluster telemetry."
@@ -276,7 +281,7 @@ class GeminiRAGGenerator:
 #### Actionable Remediation (Runbook Prescriptions):
 {chr(10).join(f"{i+1}. {r}" for i, r in enumerate(recommendations))}{cmd_section}
 
-**Model**: `Deterministic RAG Engine (Local / text-embedding-004 fallback)` | **Status**: `Proxy API Key configured - Add live GEMINI_API_KEY for dynamic generative reasoning`
+**Model**: `Deterministic RAG Engine (Local Fallback)` | **Status**: `Operational`
 """
 
         return GenerationResult(

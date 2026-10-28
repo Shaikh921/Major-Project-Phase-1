@@ -26,6 +26,31 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+# Safe stdout/stderr writer when running headless under Windows Task Scheduler / services
+class _SafeWriter:
+    def __init__(self, fallback_path: Optional[str] = None):
+        self.fallback_path = fallback_path
+
+    def write(self, s: str) -> None:
+        if not s:
+            return
+        if self.fallback_path:
+            try:
+                with open(self.fallback_path, "a", encoding="utf-8") as f:
+                    f.write(s)
+            except Exception:
+                pass
+
+    def flush(self) -> None:
+        pass
+
+_sensor_dir = "C:\\ProgramData\\CloudOpsIntel\\Sensor"
+_sensor_log = os.path.join(_sensor_dir, "sensor.log") if os.path.isdir(_sensor_dir) else None
+if sys.stdout is None:
+    sys.stdout = _SafeWriter(_sensor_log)
+if sys.stderr is None:
+    sys.stderr = _SafeWriter(_sensor_log)
+
 from monitoring_agent.collector import SystemCollector
 from monitoring_agent.buffer import MetricBuffer
 
@@ -75,6 +100,21 @@ class MonitoringAgent:
         self.spool_db_path = spool_db_path
         self._running = False
 
+        # Load assigned name and room overrides from sensor config if available
+        self.assigned_name = None
+        if os.path.exists(self.config_path):
+            try:
+                with open(self.config_path, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                    if cfg.get("assigned_name"):
+                        self.assigned_name = cfg["assigned_name"]
+                    if cfg.get("room_number") and self.region == "local":
+                        self.region = cfg["room_number"]
+                    if self.environment == "local" and cfg.get("assigned_name"):
+                        self.environment = "lab"
+            except Exception:
+                pass
+
     def _load_or_generate_uuid(self) -> str:
         """Loads device_uuid from config file if present, else generates a new stable UUID."""
         if os.path.exists(self.config_path):
@@ -104,6 +144,8 @@ class MonitoringAgent:
             while self._running:
                 # 1. Collect telemetry
                 sample = self.collector.collect()
+                if self.assigned_name:
+                    sample["hostname"] = self.assigned_name
                 sample["environment"] = self.environment
                 sample["provider"] = self.provider
                 sample["region"] = self.region
