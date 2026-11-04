@@ -10,8 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from backend.app.database.base import Base
-from backend.app.database.connection import engine
-from backend.app.database.session import SessionLocal
+import backend.app.database.connection as db_connection
+import backend.app.database.session as db_session
 
 # Import all models so SQLAlchemy metadata registers them
 from backend.app.models.host import Host
@@ -196,7 +196,7 @@ def migrate_schema_if_needed() -> None:
     without destructive drops or data loss. Does not overwrite existing owner_email records if column exists.
     """
     from sqlalchemy import text
-    with engine.connect() as conn:
+    with db_connection.engine.connect() as conn:
         try:
             # Check existing columns on hosts table
             result = conn.execute(text("PRAGMA table_info(hosts)"))
@@ -237,10 +237,10 @@ def migrate_schema_if_needed() -> None:
 
 def init_db() -> None:
     """Initializes database schema, applies safe schema additions, and populates baseline configuration."""
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=db_connection.engine)
     migrate_schema_if_needed()
     
-    with SessionLocal() as db:
+    with db_session.SessionLocal() as db:
         seed_default_rules(db)
         seed_pricing_catalog(db)
         seed_baseline_telemetry_if_empty(db)

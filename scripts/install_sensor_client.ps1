@@ -1,3 +1,4 @@
+
 # PowerShell Windows Agent Installer for CloudOps Intel Lab PC Monitoring
 # Architecture: Scheduled Task daemon under NT AUTHORITY\SYSTEM (non-interactive, boots with Windows)
 
@@ -22,7 +23,7 @@ param (
 $ErrorActionPreference = "Stop"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host " CloudOps Intel — Lab PC Monitoring Agent Installer       " -ForegroundColor Cyan
+Write-Host " CloudOps Intel - Lab PC Monitoring Agent Installer       " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. Administrator check
@@ -36,11 +37,14 @@ if (-not $PythonExe) {
     $foundPython = Get-Command "python.exe" -ErrorAction SilentlyContinue
     if ($foundPython) {
         $PythonExe = $foundPython.Source
-    } elseif (Test-Path "C:\Python313\python.exe") {
+    }
+    elseif (Test-Path "C:\Python313\python.exe") {
         $PythonExe = "C:\Python313\python.exe"
-    } elseif (Test-Path "C:\Python312\python.exe") {
+    }
+    elseif (Test-Path "C:\Python312\python.exe") {
         $PythonExe = "C:\Python312\python.exe"
-    } else {
+    }
+    else {
         throw "Could not find python.exe. Please install Python or specify -PythonExe parameter."
     }
 }
@@ -52,7 +56,8 @@ if (-not $CaCertPath) {
     $candidateCert = Join-Path $scriptDir "root.crt"
     if (Test-Path $candidateCert) {
         $CaCertPath = $candidateCert
-    } else {
+    }
+    else {
         $candidateCert2 = Join-Path $scriptDir "..\data\caddy\pki\authorities\local\root.crt"
         if (Test-Path $candidateCert2) {
             $CaCertPath = (Resolve-Path $candidateCert2).Path
@@ -75,7 +80,8 @@ if (-not (Test-Path $InstallDir)) {
 try {
     & icacls "$InstallDir" /inheritance:r /grant:r "SYSTEM:(OI)(CI)F" "Administrators:(OI)(CI)F" | Out-Null
     Write-Host "[+] Applied restrictive NTFS ACLs to $InstallDir" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Warning "Failed to set strict ACLs on $InstallDir (non-fatal if running as standard user): $_"
 }
 
@@ -141,29 +147,31 @@ try {
     if ($existing) {
         Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue | Out-Null
     }
-} catch {
+}
+catch {
     # Non-fatal if task does not exist
 }
 
-$taskArguments = "`"$agentScript`" --config `"$configFile`" --spool-db `"$spoolDb`""
+$taskArguments = '"{0}" --config "{1}" --spool-db "{2}"' -f $agentScript, $configFile, $spoolDb
 
 try {
     $action = New-ScheduledTaskAction -Execute $PythonExe -Argument $taskArguments -WorkingDirectory $InstallDir
     $trigger = New-ScheduledTaskTrigger -AtLogOn
     Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Force -ErrorAction SilentlyContinue | Out-Null
     Write-Host "[+] Registered Windows Scheduled Task: $TaskName (Auto-start on logon)" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Warning "Scheduled task registration notice: $_"
 }
 
 # 9. Launch background sensor worker immediately (Hidden, Zero-UI)
 Write-Host "[*] Launching background sensor telemetry worker..." -ForegroundColor Cyan
 $procArgs = @(
-    "`"$agentScript`"",
+    $agentScript,
     "--config",
-    "`"$configFile`"",
+    $configFile,
     "--spool-db",
-    "`"$spoolDb`""
+    $spoolDb
 )
 Start-Process -FilePath $PythonExe -ArgumentList $procArgs -WorkingDirectory $InstallDir -WindowStyle Hidden
 

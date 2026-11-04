@@ -1,0 +1,32 @@
+========================================================================
+ CLOUDOPS INTEL SENSOR - HOW TO UPDATE SERVER IP ADDRESS
+========================================================================
+
+If your Server Laptop's IP address changes, follow these steps on 
+the Sensor PC (Client PC). NO REINSTALLATION IS NEEDED.
+
+------------------------------------------------------------------------
+METHOD 1 (AUTOMATIC SCRIPT):
+------------------------------------------------------------------------
+1. Open PowerShell as Administrator.
+2. In this folder, run:
+   powershell -ExecutionPolicy Bypass -File .\change_server_ip.ps1 -NewServerIP "10.1.250.105"
+
+(Replace 10.1.250.105 with your new server IP).
+
+
+------------------------------------------------------------------------
+METHOD 2 (DIRECT COPY-PASTE COMMAND):
+------------------------------------------------------------------------
+1. Open PowerShell as Administrator.
+2. Paste and run this exact block:
+
+$NewIP = "10.1.250.105"
+$cfg = "C:\ProgramData\CloudOpsIntel\Sensor\sensor_config.json"
+(Get-Content $cfg -Raw) -replace 'https://[^/:]+:8443', "https://${NewIP}:8443" | Set-Content $cfg
+Stop-Process -Name python -Force -ErrorAction SilentlyContinue
+Start-ScheduledTask -TaskName "CloudOpsSensorAgent" -ErrorAction SilentlyContinue
+Test-NetConnection $NewIP -Port 8443
+
+========================================================================
+

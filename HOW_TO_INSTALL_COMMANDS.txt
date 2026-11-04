@@ -11,9 +11,9 @@ FAST SETUP (ONE-CLICK INSTALLATION):
    (Or: cd "C:\Temp\cloudops-sensor")
 
 3. Run the installer:
-powershell -ExecutionPolicy Bypass -File .\install_sensor_client.ps1 -ServerUrl "https://10.1.250.95:8443" -EnrollmentCode "<PASTE_ENROLLMENT_CODE_HERE>"
+powershell -ExecutionPolicy Bypass -File .\install_sensor_client.ps1 -ServerUrl "https://10.1.250.105:8443" -EnrollmentCode "<PASTE_ENROLLMENT_CODE_HERE>"
 
-4. In the Server Dashboard (https://10.1.250.95:8443):
+4. In the Server Dashboard (https://10.1.250.105:8443):
    Go to: Administration -> Device Management -> Pending Approval.
    Click "Approve & Map", assign Lab Room and PC name, click Approve.
 
@@ -53,7 +53,7 @@ Get-Process python
 Get-ScheduledTask -TaskName "CloudOpsSensorAgent"
 
 # 3. Test connectivity to Server port 8443:
-Test-NetConnection 10.1.250.95 -Port 8443
+Test-NetConnection 10.1.250.105 -Port 8443
 
 # 4. View live telemetry output in console (testing only):
 python "C:\ProgramData\CloudOpsIntel\Sensor\monitoring_agent\agent.py" --config "C:\ProgramData\CloudOpsIntel\Sensor\sensor_config.json"

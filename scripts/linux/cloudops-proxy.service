@@ -1,0 +1,20 @@
+[Unit]
+Description=CloudOps Intel Caddy Reverse Proxy & TLS Service
+Documentation=https://github.com/CloudOpsIntel
+After=network.target cloudops-backend.service
+Wants=cloudops-backend.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/cloudops
+ExecStart=/usr/bin/caddy run --config /opt/cloudops/Caddyfile
+Restart=always
+RestartSec=3
+StandardOutput=append:/opt/cloudops/logs/proxy/proxy_stdout.log
+StandardError=append:/opt/cloudops/logs/proxy/proxy_stderr.log
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+

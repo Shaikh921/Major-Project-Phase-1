@@ -51,6 +51,9 @@ db_sess.engine = test_engine
 db_sess.SessionLocal = TestingSessionLocal
 import backend.app.api.deps as api_deps
 api_deps.SessionLocal = TestingSessionLocal
+import backend.app.database.init_db as init_db_mod
+init_db_mod.engine = test_engine
+init_db_mod.SessionLocal = TestingSessionLocal
 
 # Initialize all table schemas and seed baseline rules/catalogs in-memory
 Base.metadata.create_all(bind=test_engine)

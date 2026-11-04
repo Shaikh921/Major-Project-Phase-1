@@ -16,11 +16,29 @@
 [CmdletBinding()]
 param (
     [string]$ProjectRoot = "C:\CLoudProject",
-    [string]$PythonExe   = "C:\Python313\python.exe",
+    [string]$PythonExe   = "",
+    [string]$StartType   = "SERVICE_AUTO_START",
     [switch]$StartAfterInstall
 )
 
 $ErrorActionPreference = "Stop"
+
+# Auto-detect Python binary if not explicitly provided
+if ([string]::IsNullOrWhiteSpace($PythonExe)) {
+    $venvPy = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
+    if (Test-Path $venvPy) {
+        $PythonExe = $venvPy
+    } elseif (Test-Path "C:\Python313\python.exe") {
+        $PythonExe = "C:\Python313\python.exe"
+    } else {
+        $sysPy = (Get-Command python.exe -ErrorAction SilentlyContinue).Source
+        if ($sysPy) {
+            $PythonExe = $sysPy
+        } else {
+            throw "Python binary not found. Please install Python 3.10+ or initialize .venv."
+        }
+    }
+}
 
 # 1. Validate Elevation
 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -93,13 +111,16 @@ if ($backendQuery -match "FAILED 1060") {
 }
 & $NssmExe set CloudOpsBackend AppDirectory $ProjectRoot
 & $NssmExe set CloudOpsBackend ObjectName "NT SERVICE\CloudOpsBackend"
-& $NssmExe set CloudOpsBackend Start SERVICE_DEMAND_START
+& $NssmExe set CloudOpsBackend Start $StartType
+& $NssmExe set CloudOpsBackend AppThrottle 1500
+& $NssmExe set CloudOpsBackend AppRestartDelay 3000
+& $NssmExe set CloudOpsBackend AppExit Default Restart
 & $NssmExe set CloudOpsBackend AppStdout (Join-Path $BackendLogs "backend_stdout.log")
 & $NssmExe set CloudOpsBackend AppStderr (Join-Path $BackendLogs "backend_stderr.log")
 & $NssmExe set CloudOpsBackend AppRotateFiles 1
 & $NssmExe set CloudOpsBackend AppRotateBytes 10485760
 & $NssmExe set CloudOpsBackend AppEnvironmentExtra "PYTHONUNBUFFERED=1"
-Write-Host "  -> CloudOpsBackend configured (NT SERVICE\CloudOpsBackend, Manual startup, 10MB logs)." -ForegroundColor Green
+Write-Host "  -> CloudOpsBackend configured (NT SERVICE\CloudOpsBackend, Startup: $StartType, AutoRestart on crash, 10MB logs)." -ForegroundColor Green
 
 # 4. Register CloudOpsProxy Service (Idempotent)
 Write-Host "[3/6] Configuring CloudOpsProxy service..." -ForegroundColor Yellow
@@ -114,13 +135,16 @@ if ($proxyQuery -match "FAILED 1060") {
 }
 & $NssmExe set CloudOpsProxy AppDirectory $ProjectRoot
 & $NssmExe set CloudOpsProxy ObjectName "NT SERVICE\CloudOpsProxy"
-& $NssmExe set CloudOpsProxy Start SERVICE_DEMAND_START
+& $NssmExe set CloudOpsProxy Start $StartType
+& $NssmExe set CloudOpsProxy AppThrottle 1500
+& $NssmExe set CloudOpsProxy AppRestartDelay 3000
+& $NssmExe set CloudOpsProxy AppExit Default Restart
 & $NssmExe set CloudOpsProxy AppStdout (Join-Path $ProxyLogs "proxy_stdout.log")
 & $NssmExe set CloudOpsProxy AppStderr (Join-Path $ProxyLogs "proxy_stderr.log")
 & $NssmExe set CloudOpsProxy AppRotateFiles 1
 & $NssmExe set CloudOpsProxy AppRotateBytes 10485760
 & $NssmExe set CloudOpsProxy DependOnService CloudOpsBackend
-Write-Host "  -> CloudOpsProxy configured (NT SERVICE\CloudOpsProxy, DependOnService=CloudOpsBackend)." -ForegroundColor Green
+Write-Host "  -> CloudOpsProxy configured (NT SERVICE\CloudOpsProxy, Startup: $StartType, DependOnService=CloudOpsBackend)." -ForegroundColor Green
 
 # 5. Apply Hardened NTFS Isolation (Resolving Inherited Authenticated Users Modify)
 Write-Host "[4/6] Applying Hardened ACL Isolation..." -ForegroundColor Yellow
@@ -271,7 +295,7 @@ if ($StartAfterInstall) {
         Write-Warning "`nWARNING: CloudOpsProxy did not respond on 8443 immediately. Check logs\proxy\proxy_stderr.log."
     }
 } else {
-    Write-Host "[5/6] Services registered in Manual startup mode (not started)." -ForegroundColor Yellow
+    Write-Host "[5/6] Services registered with startup mode: $StartType (use -StartAfterInstall to boot immediately)." -ForegroundColor Yellow
 }
 
 # 7. Verification and Diagnostics

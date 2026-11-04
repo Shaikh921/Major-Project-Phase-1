@@ -16,7 +16,7 @@ param (
 $ErrorActionPreference = "Continue"
 
 Write-Host "==========================================================" -ForegroundColor Yellow
-Write-Host " CloudOps Intel — Lab PC Sensor Uninstaller               " -ForegroundColor Yellow
+Write-Host " CloudOps Intel - Lab PC Sensor Uninstaller               " -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Yellow
 
 $TaskName = "CloudOpsSensorAgent"

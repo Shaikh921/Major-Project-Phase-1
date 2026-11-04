@@ -77,8 +77,12 @@ def build_package():
     shutil.copy2(REQUIREMENTS_FILE, temp_build_dir / "requirements.txt")
     print("    + requirements.txt")
 
-    shutil.copy2(README_FILE, temp_build_dir / "README.md")
-    print("    + README.md")
+    if README_FILE.exists():
+        shutil.copy2(README_FILE, temp_build_dir / "README.md")
+        print("    + README.md")
+    elif (PROJECT_ROOT / "docs" / "SENSOR_DEPLOYMENT_MANUAL.md").exists():
+        shutil.copy2(PROJECT_ROOT / "docs" / "SENSOR_DEPLOYMENT_MANUAL.md", temp_build_dir / "README.md")
+        print("    + README.md (from docs/SENSOR_DEPLOYMENT_MANUAL.md)")
 
     commands_file = PROJECT_ROOT / "HOW_TO_INSTALL_COMMANDS.txt"
     if commands_file.exists():
@@ -86,6 +90,16 @@ def build_package():
         shutil.copy2(commands_file, temp_build_dir / "COMMANDS.txt")
         print("    + HOW_TO_INSTALL_COMMANDS.txt")
         print("    + COMMANDS.txt")
+
+    change_ip_script = PROJECT_ROOT / "scripts" / "change_server_ip.ps1"
+    if change_ip_script.exists():
+        shutil.copy2(change_ip_script, temp_build_dir / "change_server_ip.ps1")
+        print("    + change_server_ip.ps1")
+
+    update_ip_txt = PROJECT_ROOT / "UPDATE_SERVER_IP.txt"
+    if update_ip_txt.exists():
+        shutil.copy2(update_ip_txt, temp_build_dir / "UPDATE_SERVER_IP.txt")
+        print("    + UPDATE_SERVER_IP.txt")
 
     # 3. Copy public root.crt ONLY
     shutil.copy2(PUBLIC_CA_CERT, temp_build_dir / "root.crt")

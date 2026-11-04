@@ -6,7 +6,7 @@
  */
 
 import { store, ENVIRONMENTS, TIME_RANGES } from "./config.js";
-import { api } from "./api.js?v=3.6.1";
+import { api } from "./api.js?v=3.6.2";
 import { authManager } from "./auth.js";
 import { currencyManager } from "./currency.js";
 import { escapeHtml } from "./sanitizer.js";
@@ -24,7 +24,7 @@ import { renderIncidentsView } from "./views/IncidentsView.js";
 import { renderSecurityView } from "./views/SecurityView.js";
 import { renderCostView } from "./views/CostView.js";
 import { renderNarratorView } from "./views/NarratorView.js";
-import { renderReportsView } from "./views/ReportsView.js";
+import { renderReportsView } from "./views/ReportsView.js?v=3.6.2";
 import { renderAuditView } from "./views/AuditView.js";
 import { renderSettingsView } from "./views/SettingsView.js";
 import { renderAdminManagementView } from "./views/AdminManagementView.js";

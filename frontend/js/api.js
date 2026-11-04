@@ -78,6 +78,67 @@ class ApiClient {
     }
   }
 
+  async downloadBlob(endpoint, options = {}, defaultFilename = "report.pdf") {
+    const url = `${this.baseUrl}${endpoint}`;
+    const headers = {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    };
+
+    if (authManager.accessToken && !headers["Authorization"]) {
+      headers["Authorization"] = `Bearer ${authManager.accessToken}`;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), options.timeout || 60000);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        credentials: "same-origin",
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        let errorDetail = `HTTP ${response.status} ${response.statusText}`;
+        try {
+          const errJson = await response.json();
+          if (errJson.detail) errorDetail = typeof errJson.detail === "string" ? errJson.detail : JSON.stringify(errJson.detail);
+        } catch {}
+        throw new Error(errorDetail);
+      }
+
+      let filename = defaultFilename;
+      const disp = response.headers.get("Content-Disposition");
+      if (disp && disp.includes("filename=")) {
+        const matches = disp.match(/filename=["']?([^"';]+)["']?/);
+        if (matches && matches[1]) {
+          filename = matches[1];
+        }
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+      return filename;
+    } catch (err) {
+      clearTimeout(timeout);
+      if (err.name === "AbortError") {
+        throw new Error("Report download timed out. Check backend connectivity.");
+      }
+      throw err;
+    }
+  }
+
   // --- Authentication API Methods ---
 
   login(email, password) {
@@ -371,11 +432,62 @@ class ApiClient {
   }
 
   // --- Reports & Audit ---
-  generateReport(timeRangeHours = 24, environment = null) {
+  generateReport(timeRangeHours = 24, environment = null, offlineThresholdSeconds = 90) {
+    const payload = {
+      time_range_hours: timeRangeHours,
+      offline_threshold_seconds: offlineThresholdSeconds,
+    };
+    if (environment && environment !== "All Environments") {
+      payload.environment = environment;
+    }
     return this.request("/reports/generate", {
       method: "POST",
-      body: JSON.stringify({ time_range_hours: timeRangeHours, environment }),
+      body: JSON.stringify(payload),
     });
+  }
+
+  generateReportPdf(timeRangeHours = 24, environment = null, offlineThresholdSeconds = 90) {
+    const payload = {
+      time_range_hours: timeRangeHours,
+      offline_threshold_seconds: offlineThresholdSeconds,
+    };
+    if (environment && environment !== "All Environments") {
+      payload.environment = environment;
+    }
+    return this.downloadBlob(
+      "/reports/generate-pdf",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+      `cloudops-overall-report-${environment || "all"}.pdf`
+    );
+  }
+
+  generateHostReport(hostId, timeRangeHours = 24, offlineThresholdSeconds = 90) {
+    const payload = {
+      time_range_hours: timeRangeHours,
+      offline_threshold_seconds: offlineThresholdSeconds,
+    };
+    return this.request(`/reports/host/${hostId}/generate`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  generateHostReportPdf(hostId, timeRangeHours = 24, offlineThresholdSeconds = 90) {
+    const payload = {
+      time_range_hours: timeRangeHours,
+      offline_threshold_seconds: offlineThresholdSeconds,
+    };
+    return this.downloadBlob(
+      `/reports/host/${hostId}/generate-pdf`,
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+      `cloudops-sensor-report-host-${hostId}.pdf`
+    );
   }
 
   getAuditLogs(action = null, limit = 50) {

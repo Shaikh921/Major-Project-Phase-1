@@ -1,0 +1,20 @@
+[Unit]
+Description=CloudOps Intel Backend Service (FastAPI)
+Documentation=https://github.com/CloudOpsIntel
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/cloudops
+EnvironmentFile=/opt/cloudops/.env
+ExecStart=/opt/cloudops/.venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=3
+StandardOutput=append:/opt/cloudops/logs/backend/backend_stdout.log
+StandardError=append:/opt/cloudops/logs/backend/backend_stderr.log
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+
