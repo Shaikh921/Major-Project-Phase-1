@@ -92,7 +92,7 @@ def update_host_metadata(
     """
     Updates configuration or metadata attributes on a host. Requires ADMIN role.
     """
-    host = update_host(db, host_id, host_in)
+    host = update_host(db, host_id, host_in, user_id=current_user.id)
     if not host:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -110,7 +110,7 @@ def deactivate_monitored_host(
     """
     Deactivates a host from active telemetry expectation. Requires ADMIN role.
     """
-    host = deactivate_host(db, host_id)
+    host = deactivate_host(db, host_id, user_id=current_user.id)
     if not host:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

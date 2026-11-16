@@ -61,7 +61,7 @@ def build_package():
     # 1. Copy monitoring agent files
     target_agent_dir = temp_build_dir / "monitoring_agent"
     target_agent_dir.mkdir(parents=True)
-    for agent_file in ["agent.py", "buffer.py", "collector.py", "__init__.py"]:
+    for agent_file in ["agent.py", "buffer.py", "collector.py", "diagnostic_worker.py", "__init__.py"]:
         src = AGENT_DIR / agent_file
         if src.exists():
             shutil.copy2(src, target_agent_dir / agent_file)

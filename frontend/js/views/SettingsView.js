@@ -138,7 +138,7 @@ function openCreateRuleModal() {
   `;
 
   const footer = `
-    <button class="btn btn-sm" onclick="(${closeModal})()">Cancel</button>
+    <button class="btn btn-sm" class="btn btn-sm btn-close-modal">Cancel</button>
     <button class="btn btn-primary btn-sm" id="submit-rule-btn">Create Rule</button>
   `;
 

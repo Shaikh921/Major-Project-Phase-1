@@ -34,6 +34,17 @@ export function openModal(title, contentHtml, footerHtml = "") {
   const closeBtn = backdrop.querySelector("#modal-close-btn");
   if (closeBtn) closeBtn.onclick = closeModal;
 
+  // Automatically attach closeModal to any button with .btn-close-modal or whose text is Close / Cancel
+  backdrop.querySelectorAll("button").forEach(btn => {
+    const text = btn.textContent.trim().toLowerCase();
+    if (text === "close" || text === "cancel" || btn.classList.contains("btn-close-modal")) {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        closeModal();
+      };
+    }
+  });
+
   backdrop.onclick = (e) => {
     if (e.target === backdrop) closeModal();
   };
@@ -52,4 +63,8 @@ export function closeModal() {
     activeModal.parentNode.removeChild(activeModal);
     activeModal = null;
   }
+}
+
+if (typeof window !== "undefined") {
+  window.closeModal = closeModal;
 }

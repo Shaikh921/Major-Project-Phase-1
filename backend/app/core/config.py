@@ -70,6 +70,16 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite:///./cloud_intelligence.db"
 
+    # Database Explorer Feature Flag
+    # Disabled by default; strictly restricts administrative database inspection
+    enable_database_explorer: bool = False
+
+    # Remote Diagnostics & Power Operations Feature Flag
+    # Set to False to globally disable remote reboot, shutdown, and abort capabilities
+    enable_remote_power_operations: bool = True
+    power_operation_default_grace_seconds: int = 60
+    power_operation_min_grace_seconds: int = 10
+
     # Redis
     redis_url: str = "redis://localhost:6379/0"
 

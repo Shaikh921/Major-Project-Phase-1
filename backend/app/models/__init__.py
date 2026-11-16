@@ -20,6 +20,17 @@ from backend.app.models.user import (
 
 from backend.app.models.agent_key import AgentApiKey
 from backend.app.models.device import DeviceEnrollment, EnrollmentCode, DeviceStatus, TelemetryHealthStatus
+from backend.app.models.assignment import (
+    UserEnvironmentAssignment,
+    UserHostAssignment,
+    AssignmentStatus,
+)
+from backend.app.models.diagnostic import (
+    DiagnosticCommand,
+    DiagnosticResult,
+    DiagnosticAction,
+    DiagnosticStatus,
+)
 
 __all__ = [
     "Host",
@@ -45,4 +56,11 @@ __all__ = [
     "EnrollmentCode",
     "DeviceStatus",
     "TelemetryHealthStatus",
+    "UserEnvironmentAssignment",
+    "UserHostAssignment",
+    "AssignmentStatus",
+    "DiagnosticCommand",
+    "DiagnosticResult",
+    "DiagnosticAction",
+    "DiagnosticStatus",
 ]

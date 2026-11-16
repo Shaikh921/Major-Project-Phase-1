@@ -1,13 +1,13 @@
-# Python
+# ==============================================================================
+# CloudOps Intel — Production Git Ignore Specification
+# ==============================================================================
+
+# Python & Bytecode
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
-venv/
-.venv/
-ENV/
 build/
 develop-eggs/
 dist/
@@ -24,12 +24,41 @@ wheels/
 .installed.cfg
 *.egg
 
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
 # Environment Variables & Secrets
 .env
 .env.*
+*.env
 *.env.local
+!*.env.example
 *.pem
 *.key
+*.crt
+
+# SQLite Databases & WAL Sidecars
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+sensor_spool.db*
+cloud_intelligence.db*
+
+# Caddy PKI, Local Authorities & Reverse Proxy Storage
+data/caddy/
+root.crt
+
+# Windows Service Binaries & Archives
+tools/
+*.exe
 
 # Archives & Large Compressed Bundles
 *.zip
@@ -38,7 +67,7 @@ wheels/
 *.rar
 *.7z
 
-# Data & Models (avoid committing large datasets & weights)
+# Data, Model Weights & Serialized Artifacts
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*
@@ -53,7 +82,7 @@ data/synthetic/*
 *.h5
 *.pkl
 
-# Node / Frontend
+# Node / Frontend Artifacts
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -61,42 +90,31 @@ yarn-error.log*
 .pnpm-debug.log*
 frontend/dist/
 frontend/build/
-.next/
-out/
 
-# Logs
+# Logs & Runtime Dumps
 logs/
 *.log
+*.log.*
 
-# IDE & OS
+# Testing & Coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Backups & Recovery Manifests
+backups/
+.backups/
+
+# Operating System & IDE Clutter
 .vscode/
 .idea/
 *.swp
 *.swo
 .DS_Store
 Thumbs.db
-
-# Testing & Coverage
-.coverage
-htmlcov/
-.pytest_cache/
-.mypy_cache/
-
-# Databases & WAL Sidecars
-*.db
-*.db-journal
-*.db-wal
-*.db-shm
-*.sqlite
-*.sqlite3
-
-# Backups & Recovery Manifests
-backups/
-
-# Caddy PKI, Local Authorities & Private Keys
-data/caddy/
-root.crt
-
-# Windows Service Binaries & Archives
-tools/
-*.exe
+desktop.ini
+~$*
+*.tmp
+*.temp

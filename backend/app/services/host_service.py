@@ -11,6 +11,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from backend.app.models.host import Host
+from backend.app.models.assignment import UserHostAssignment, AssignmentStatus
+from backend.app.models.diagnostic import DiagnosticCommand, DiagnosticStatus
+from backend.app.models.security import AuditLog
 from backend.app.schemas.host import HostCreate, HostUpdate
 
 
@@ -140,15 +143,90 @@ def get_hosts(
     return list(db.scalars(statement).all())
 
 
-def update_host(db: Session, host_id: int, host_in: HostUpdate) -> Optional[Host]:
+def decommission_host_atomic(db: Session, host_id: int, user_id: Optional[int] = None) -> Optional[Host]:
+    """
+    Atomically decommissions a host:
+    1. Sets Host.is_active = False.
+    2. Atomically revokes all active UserHostAssignment records.
+    3. Atomically expires all PENDING diagnostic commands.
+    4. Records an AuditLog entry.
+    """
+    host = get_host(db, host_id)
+    if host is None:
+        return None
+
+    now = datetime.now(timezone.utc)
+    host.is_active = False
+    host.updated_at = now
+
+    # Revoke all active host-level assignments atomically
+    db.query(UserHostAssignment).filter(
+        UserHostAssignment.host_id == host_id,
+        UserHostAssignment.status == AssignmentStatus.ACTIVE,
+    ).update(
+        {
+            "status": AssignmentStatus.REVOKED,
+            "revoked_at": now,
+            "revoked_by_id": user_id,
+            "updated_at": now,
+        },
+        synchronize_session=False,
+    )
+
+    # Expire all pending diagnostic commands for this host
+    db.query(DiagnosticCommand).filter(
+        DiagnosticCommand.host_id == host_id,
+        DiagnosticCommand.status == DiagnosticStatus.PENDING,
+    ).update(
+        {
+            "status": DiagnosticStatus.EXPIRED,
+            "failure_reason": "HOST_DECOMMISSIONED",
+            "completed_at": now,
+            "updated_at": now,
+        },
+        synchronize_session=False,
+    )
+
+    # Record Audit Log
+    email = "system@ops.local"
+    if user_id:
+        from backend.app.models.user import User
+        u = db.get(User, user_id)
+        if u:
+            email = u.email
+
+    audit = AuditLog(
+        user_email=email,
+        action="DECOMMISSION_HOST",
+        target_resource=f"Host #{host_id} ({host.hostname})",
+        details=f"Host '{host.hostname}' marked inactive. Revoked active host assignments and expired pending diagnostic commands.",
+        result="success",
+    )
+    db.add(audit)
+
+    db.commit()
+    db.refresh(host)
+    return host
+
+
+def update_host(db: Session, host_id: int, host_in: HostUpdate, user_id: Optional[int] = None) -> Optional[Host]:
     """
     Updates metadata attributes of an existing host.
+    If is_active is explicitly changed to False, triggers atomic host decommissioning.
     """
     host = get_host(db, host_id)
     if host is None:
         return None
 
     update_data = host_in.model_dump(exclude_unset=True)
+
+    # If deactivating, use atomic decommissioning hook
+    if update_data.get("is_active") is False and host.is_active:
+        for field, value in update_data.items():
+            if field != "is_active":
+                setattr(host, field, value)
+        return decommission_host_atomic(db, host_id, user_id=user_id)
+
     for field, value in update_data.items():
         setattr(host, field, value)
 
@@ -158,18 +236,11 @@ def update_host(db: Session, host_id: int, host_in: HostUpdate) -> Optional[Host
     return host
 
 
-def deactivate_host(db: Session, host_id: int) -> Optional[Host]:
+def deactivate_host(db: Session, host_id: int, user_id: Optional[int] = None) -> Optional[Host]:
     """
-    Marks a host as inactive (e.g. decommissioned or gracefully stopped).
+    Marks a host as inactive (e.g. decommissioned or gracefully stopped),
+    atomically revoking active host assignments and expiring pending diagnostic commands.
     """
-    host = get_host(db, host_id)
-    if host is None:
-        return None
-
-    host.is_active = False
-    host.updated_at = datetime.now(timezone.utc)
-    db.commit()
-    db.refresh(host)
-    return host
+    return decommission_host_atomic(db, host_id, user_id=user_id)
 
 

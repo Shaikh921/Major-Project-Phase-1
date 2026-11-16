@@ -19,11 +19,17 @@ from backend.app.api.v1.auth import router as auth_router
 from backend.app.api.v1.admin import router as admin_router
 from backend.app.api.v1.lab import router as lab_router
 from backend.app.api.v1.devices import router as devices_router
+from backend.app.api.v1.assignments import router as assignments_router
+from backend.app.api.v1.diagnostics import router as diagnostics_router
+from backend.app.api.v1.database_explorer import router as database_explorer_router
 
 api_router = APIRouter(prefix="/api/v1")
 
 api_router.include_router(auth_router)
 api_router.include_router(admin_router)
+api_router.include_router(database_explorer_router)
+api_router.include_router(assignments_router)
+api_router.include_router(diagnostics_router)
 api_router.include_router(devices_router)
 api_router.include_router(hosts_router)
 api_router.include_router(metrics_router)

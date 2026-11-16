@@ -115,6 +115,18 @@ class MonitoringAgent:
             except Exception:
                 pass
 
+        # Phase 9A.1 Predefined Diagnostic Worker integration
+        try:
+            from monitoring_agent.diagnostic_worker import DiagnosticWorker
+            self.diagnostic_worker = DiagnosticWorker(config_path=self.config_path)
+            if not self.diagnostic_worker.config.get("server_url"):
+                base_url = server_url.replace("/api/v1/metrics", "").rstrip("/")
+                self.diagnostic_worker.config["server_url"] = base_url
+                self.diagnostic_worker.config["api_key"] = api_key
+                self.diagnostic_worker.config["device_uuid"] = self.device_uuid
+        except Exception:
+            self.diagnostic_worker = None
+
     def _load_or_generate_uuid(self) -> str:
         """Loads device_uuid from config file if present, else generates a new stable UUID."""
         if os.path.exists(self.config_path):
@@ -172,6 +184,13 @@ class MonitoringAgent:
                 cycle += 1
                 if max_cycles and cycle >= max_cycles:
                     break
+
+                # 4. Phase 9A.1: Check for pending remote diagnostic commands
+                if self.diagnostic_worker:
+                    try:
+                        self.diagnostic_worker.poll_and_execute_once()
+                    except Exception:
+                        pass
 
                 time.sleep(self.interval)
 

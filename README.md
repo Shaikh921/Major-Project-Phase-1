@@ -45,8 +45,12 @@ The `docs/` directory contains complete, publication-grade technical guides and 
 
 | Document | Format | Description |
 | :--- | :--- | :--- |
+| [**System Technical Report**](docs/SYSTEM_COMPREHENSIVE_TECHNICAL_REPORT.md) | Markdown | Publication-grade comprehensive report detailing architecture, HTTPS implementation, WAL database interaction, sensor data pipelines, and RAG incident triaging. |
+| [**Database Terminal Interaction Guide**](docs/DATABASE_TERMINAL_INTERACTION_GUIDE.md) | Markdown | Production guide and command reference for querying and administering `cloud_intelligence.db` directly via terminal. |
+| [**Architecture Presentation Deck**](docs/CloudOps_Intel_Architecture_Presentation.pptx) | PowerPoint (16:9) | Official architecture, workflow, security, and viva presentation deck. |
 | [**Deployment Guide**](docs/DEPLOYMENT_GUIDE.pdf) | **PDF (Print-Ready)** | Complete step-by-step master server setup, network/firewall configuration, agent packaging, and zero-trust lab PC onboarding. |
 | [**Dashboard Feature Guide**](docs/DASHBOARD_FEATURE_GUIDE.pdf) | **PDF (Illustrated)** | Comprehensive guide covering all 16 views, widgets, ML models, RAG engine, and administrative workflows with embedded screenshots. |
+| [**Teacher Demo & Viva Guide**](docs/CloudOps_Intel_Teacher_Demo_and_Technical_Viva_Guide.pdf) | **PDF (Print-Ready)** | Evaluator demo roadmap, viva questions, and technical talking points. |
 | [**Collegiate Deployment Checklist**](docs/lab-monitoring/COLLEGE_DEPLOYMENT_CHECKLIST.md) | Markdown | 4-section readiness audit for institutional IT departments and lab rollout. |
 | [**Network & TLS Architecture**](docs/lab-monitoring/NETWORK_AND_TLS_SETUP.md) | Markdown | TLS 1.3 reverse proxy configuration, certificate distribution, and port isolation rules. |
 

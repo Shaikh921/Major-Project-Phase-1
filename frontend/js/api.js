@@ -579,6 +579,95 @@ class ApiClient {
       body: JSON.stringify({ reason }),
     });
   }
+
+  // --- Phase 9A.1 Hybrid RBAC Assignments ---
+  getAssignments(activeOnly = true) {
+    return this.request(`/assignments?active_only=${activeOnly}`);
+  }
+
+  assignEnvironment(userId, environment) {
+    return this.request("/assignments/environments", {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId, environment }),
+    });
+  }
+
+  revokeEnvironmentAssignment(assignmentId) {
+    return this.request(`/assignments/environments/${assignmentId}`, {
+      method: "DELETE",
+    });
+  }
+
+  assignHost(userId, hostId) {
+    return this.request("/assignments/hosts", {
+      method: "POST",
+      body: JSON.stringify({ user_id: userId, host_id: hostId }),
+    });
+  }
+
+  revokeHostAssignment(assignmentId) {
+    return this.request(`/assignments/hosts/${assignmentId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // --- Phase 9A.1 Predefined Remote Diagnostics ---
+  getDiagnosticActions() {
+    return this.request("/diagnostics/actions");
+  }
+
+  dispatchDiagnostic(hostId, action, target = null, timeoutSeconds = 30) {
+    return this.request("/diagnostics/dispatch", {
+      method: "POST",
+      body: JSON.stringify({
+        host_id: hostId,
+        action,
+        target,
+        timeout_seconds: timeoutSeconds,
+      }),
+    });
+  }
+
+  getDiagnosticHistory(hostId = null, status = null, limit = 50) {
+    const qs = new URLSearchParams();
+    if (hostId) qs.set("host_id", hostId);
+    if (status) qs.set("status_filter", status);
+    qs.set("limit", limit);
+    return this.request(`/diagnostics/history?${qs.toString()}`);
+  }
+
+  getDiagnosticCommand(commandId) {
+    return this.request(`/diagnostics/commands/${commandId}`);
+  }
+
+  // --- Database & Storage Explorer Methods ---
+  getDatabaseExplorerStatus() {
+    return this.request("/database-explorer/status");
+  }
+
+  getDatabaseExplorerOverview() {
+    return this.request("/database-explorer/overview");
+  }
+
+  getDatabaseExplorerTables() {
+    return this.request("/database-explorer/tables");
+  }
+
+  getDatabaseExplorerSchema(tableName) {
+    return this.request(`/database-explorer/tables/${encodeURIComponent(tableName)}/schema`);
+  }
+
+  getDatabaseExplorerRecords(tableName, params = {}) {
+    const qs = new URLSearchParams();
+    if (params.limit) qs.set("limit", params.limit);
+    if (params.page) qs.set("page", params.page);
+    if (params.cursor !== undefined && params.cursor !== null) qs.set("cursor", params.cursor);
+    if (params.sort_by) qs.set("sort_by", params.sort_by);
+    if (params.sort_order) qs.set("sort_order", params.sort_order);
+    const queryStr = qs.toString();
+    const endpoint = `/database-explorer/tables/${encodeURIComponent(tableName)}/records${queryStr ? `?${queryStr}` : ""}`;
+    return this.request(endpoint);
+  }
 }
 
 
