@@ -1,3 +1,11 @@
+# 🎓 Project Phase I (2026–27) — CloudOps Intel
+### Cloud Intelligence Platform & SRE Command Center
+
+> **Academic Submission Notice:**  
+> This repository contains the complete **Project Phase I (2026–27)** submission, including full platform source code, architecture documentation, database models and initialization scripts, `requirements.txt`, automated test suites, and deployment guides.
+
+---
+
 # 🌐 Cloud Intelligence Platform & SRE Command Center
 
 An intelligent, multi-cloud observability, AI-driven anomaly detection, multi-currency cost optimization, role-based access control (RBAC), production SMTP notification, and narrative synthesis platform.
