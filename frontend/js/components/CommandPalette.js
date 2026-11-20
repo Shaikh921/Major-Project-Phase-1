@@ -167,7 +167,7 @@ export function openCommandPalette() {
     api.getHosts().then(hosts => {
       cachedHosts = hosts || [];
       hostsFetched = true;
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   setTimeout(() => {
@@ -224,7 +224,7 @@ function renderCommandItems(commands) {
       style="display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; cursor: pointer; border-radius: var(--radius-sm);"
     >
       <div style="display: flex; align-items: center; gap: 10px;">
-        <span style="color: var(--accent-cyan, #06b6d4); display: inline-flex;">
+        <span style="color: var(--primary); display: inline-flex;">
           ${renderIcon(c.icon, { size: "sm" })}
         </span>
         <span style="font-weight: 500;">${escapeHtml(c.title)}</span>

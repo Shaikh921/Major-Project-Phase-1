@@ -95,7 +95,7 @@ export async function renderNarratorView(container) {
 
     try {
       const resp = await api.queryNarrator(q);
-      
+
       const struct = resp.structured_explanation || {};
       const modelBadge = struct.model_used || "RAG-Augmented SRE Engine";
       const retrievedChunks = struct.retrieved_chunks || [];
@@ -104,55 +104,56 @@ export async function renderNarratorView(container) {
       let chunksHtml = "";
       if (retrievedChunks.length > 0) {
         chunksHtml = `
-          <div style="margin-top: 14px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px;">
+          <div style="margin-top: 14px; background: #F8FAFC; border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 12px;">
             <div style="font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
               <span style="display: flex; align-items: center; gap: 5px;">
                 ${renderIcon("file-text", { size: "xs" })} Retrieved Knowledge & Operational Signals (${retrievedChunks.length})
               </span>
-              <span class="badge badge-sm" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">
+              <span class="badge badge-healthy badge-sm">
                 BM25 + Dense Hybrid
               </span>
             </div>
             <div style="display: flex; flex-direction: column; gap: 6px;">
               ${retrievedChunks.map(rc => {
-                const isRunbook = rc.source_type === "runbook" || (rc.reference_id && rc.reference_id.startsWith("RUNBOOK"));
-                const typeLabel = isRunbook
-                  ? `<span class="badge badge-sm" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; font-size: 9px; padding: 1px 5px;">Runbook</span>`
-                  : `<span class="badge badge-sm" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; font-size: 9px; padding: 1px 5px;">Telemetry</span>`;
-                return `
-                  <div style="padding: 6px 8px; background: var(--bg-surface); border-radius: 4px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+          const isRunbook = rc.source_type === "runbook" || (rc.reference_id && rc.reference_id.startsWith("RUNBOOK"));
+          const typeLabel = isRunbook
+            ? `<span class="badge badge-info badge-sm">Runbook</span>`
+            : `<span class="badge badge-warning badge-sm">Telemetry</span>`;
+          return `
+                  <div style="padding: 6px 10px; background: #FFFFFF; border: 1px solid var(--border-default); border-radius: 4px; font-size: 11.5px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
                     <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
                       ${typeLabel}
                       <span style="font-weight: 600; color: var(--text-primary); white-space: nowrap;">[${escapeHtml(rc.reference_id || 'DOC')}]</span>
                       <span style="color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${escapeHtml(rc.title || 'Signal')}</span>
                       ${rc.section ? `<span style="color: var(--text-muted); font-size: 10px; white-space: nowrap;"> &rsaquo; ${escapeHtml(rc.section)}</span>` : ''}
                     </div>
-                    <span class="mono" style="font-size: 10px; color: var(--text-muted); background: var(--bg-app); padding: 2px 6px; border-radius: 3px; white-space: nowrap;">
+                    <span class="mono" style="font-size: 10px; color: var(--text-muted); background: #F1F5F9; border: 1px solid var(--border-subtle); padding: 2px 6px; border-radius: 3px; white-space: nowrap;">
                       Match: ${(rc.score * 100).toFixed(0)}%
                     </span>
                   </div>
                 `;
-              }).join("")}
-            </div>
-          </div>
-        `;
+        }).join("")
+          }
+            </div >
+          </div >
+    `;
       }
 
       loadingMsg.innerHTML = `
-        <div style="font-weight: 700; color: var(--status-ai); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+    < div style = "font-weight: 700; color: var(--status-ai); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;" >
           <div style="display: flex; align-items: center; gap: 6px;">
             ${renderIcon("bot", { size: "sm" })} Grounded Incident Explanation
           </div>
           <span class="badge badge-sm badge-ai" style="font-size: 10px;">${escapeHtml(modelBadge)}</span>
-        </div>
-        <div>${renderSafeMarkdown(resp.raw_markdown_narrative)}</div>
+        </div >
+    <div>${renderSafeMarkdown(resp.raw_markdown_narrative)}</div>
         ${chunksHtml}
-        <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-subtle); font-size: 10.5px; color: var(--text-muted);">
-          <strong>CITED DATA SOURCES:</strong> ${citations.map(s => `<code class="mono" style="background: var(--bg-app); padding: 1px 4px; border-radius: 2px; margin-right: 4px; display: inline-block; margin-top: 2px;">${escapeHtml(s)}</code>`).join(" ")}
-        </div>
-      `;
+  <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-subtle); font-size: 10.5px; color: var(--text-muted);">
+    <strong>CITED DATA SOURCES:</strong> ${citations.map(s => `<code class="mono" style="background: var(--bg-app); padding: 1px 4px; border-radius: 2px; margin-right: 4px; display: inline-block; margin-top: 2px;">${escapeHtml(s)}</code>`).join(" ")}
+  </div>
+  `;
     } catch (err) {
-      loadingMsg.innerHTML = `<span class="text-critical">Failed to execute reasoning inquiry: ${escapeHtml(err.message)}</span>`;
+      loadingMsg.innerHTML = `< span class="text-critical" > Failed to execute reasoning inquiry: ${escapeHtml(err.message)}</span > `;
     }
 
     chatHistory.scrollTop = chatHistory.scrollHeight;

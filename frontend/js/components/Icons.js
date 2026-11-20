@@ -51,7 +51,11 @@ const ICONS = {
   "lock": `<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>`,
   "lightbulb": `<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>`,
   "bar-chart": `<line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/>`,
-  "loader": `<path d="M21 12a9 9 0 1 1-6.219-8.56"/>`
+  "loader": `<path d="M21 12a9 9 0 1 1-6.219-8.56"/>`,
+  "more-vertical": `<circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/>`,
+  "terminal": `<polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/>`,
+  "play": `<polygon points="5 3 19 12 5 21 5 3"/>`,
+  "wrench": `<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>`
 };
 
 /**
@@ -70,7 +74,7 @@ export function renderIcon(name, options = {}) {
   } = options;
 
   const innerSvg = ICONS[name] || ICONS["circle-alert"];
-  
+
   const sizeClasses = {
     xs: "icon-xs",
     sm: "icon-sm",

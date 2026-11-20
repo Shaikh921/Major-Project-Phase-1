@@ -87,13 +87,13 @@ export async function renderResourcesView(container) {
           </thead>
           <tbody id="hosts-table-body">
             ${hosts.map(h => {
-              const m = metricsMap.get(h.id);
-              const sumHost = summaryHostMap.get(h.id);
-              const effectiveStatus = sumHost ? sumHost.status : (h.is_active ? "healthy" : "offline");
-              const effectiveSource = h.source_type || (sumHost ? sumHost.source_type : "UNKNOWN");
-              const effectiveLastSeen = (m && m.timestamp) || (sumHost && sumHost.last_seen) || h.updated_at;
+      const m = metricsMap.get(h.id);
+      const sumHost = summaryHostMap.get(h.id);
+      const effectiveStatus = sumHost ? sumHost.status : (h.is_active ? "healthy" : "offline");
+      const effectiveSource = h.source_type || (sumHost ? sumHost.source_type : "UNKNOWN");
+      const effectiveLastSeen = (m && m.timestamp) || (sumHost && sumHost.last_seen) || h.updated_at;
 
-              return `
+      return `
                 <tr class="host-item-row" data-hostname="${escapeHtml(h.hostname)}" data-ip="${escapeHtml(h.ip_address || '')}" data-env="${escapeHtml(h.environment || '')}" data-source="${escapeHtml(effectiveSource)}">
                   <td>${renderStatusBadge(effectiveStatus)}</td>
                   <td>${renderSourceBadge(effectiveSource)}</td>
@@ -111,7 +111,7 @@ export async function renderResourcesView(container) {
                   </td>
                 </tr>
               `;
-            }).join("")}
+    }).join("")}
           </tbody>
         </table>
       </div>
@@ -187,8 +187,8 @@ export async function renderResourcesView(container) {
 }
 
 async function openHostDetailsModal(hostId) {
-  
-openModal(`Host Telemetry & Details (ID: ${hostId})`, `
+
+  openModal(`Host Telemetry & Details (ID: ${hostId})`, `
     <div class="state-container" style="padding: 20px;">
       <div class="state-icon">${renderIcon("loader", { size: "xl", className: "icon-spin" })}</div>
       <div class="state-title">Fetching host metrics...</div>
@@ -399,7 +399,7 @@ function openRegisterHostModal() {
 }
 
 
-async function openDiagnosticModal(hostId, hostname) {
+export async function openDiagnosticModal(hostId, hostname) {
   const safeHostname = hostname || ('Host #' + hostId);
   openModal(`Predefined Diagnostics Console — ${escapeHtml(safeHostname)}`, `
     <div style="display: flex; flex-direction: column; gap: 16px;">
@@ -453,46 +453,46 @@ async function openDiagnosticModal(hostId, hostname) {
       </div>
 
       <!-- Multi-Step Confirmation Panel for Power Operations -->
-      <div id="power-confirm-panel" style="display: none; background: rgba(220, 38, 38, 0.08); border: 1px solid var(--critical); border-radius: var(--radius-md); padding: 14px;">
+      <div id="power-confirm-panel" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-md); padding: 14px;">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: var(--critical); font-weight: 700; font-size: 12px; text-transform: uppercase;">
           ${renderIcon("alert-triangle", { size: "sm" })}
           <span>Double Confirmation Required: High Impact Power Action</span>
         </div>
         <p style="font-size: 11.5px; line-height: 1.5; color: var(--text-secondary); margin-bottom: 10px;">
           You are about to remotely <strong id="power-action-name" style="color: var(--critical);">REBOOT</strong> physical machine
-          <strong class="mono" style="color: #fff;">${escapeHtml(safeHostname)}</strong>. Active user sessions will be terminated and telemetry paused.
-          Windows will show a system notification balloon for <strong id="power-grace-display" style="color: #fff;">60</strong> seconds before the power action executes.
+          <strong class="mono" style="color: var(--text-primary); font-weight: 700;">${escapeHtml(safeHostname)}</strong>. Active user sessions will be terminated and telemetry paused.
+          Windows will show a system notification balloon for <strong id="power-grace-display" style="color: var(--text-primary); font-weight: 700;">60</strong> seconds before the power action executes.
         </p>
         <div style="margin-bottom: 12px;">
           <label style="font-size: 11px; font-weight: 600; color: var(--text-primary); display: block; margin-bottom: 4px;">
-            To confirm, type the exact hostname <code class="mono" style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: var(--primary); user-select: all;">${escapeHtml(safeHostname)}</code> below:
+            To confirm, type the exact hostname <code class="mono" style="background: #F1F5F9; padding: 2px 6px; border-radius: 4px; color: var(--primary); border: 1px solid var(--border-default); user-select: all;">${escapeHtml(safeHostname)}</code> below:
           </label>
           <input type="text" id="power-confirm-input" class="input-control mono" placeholder="Type exact hostname here" style="width: 100%; border-color: var(--critical); font-weight: 600;" autocomplete="off">
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 8px;">
           <button id="btn-cancel-power" class="btn btn-secondary btn-sm">Cancel</button>
-          <button id="btn-execute-power" class="btn btn-danger btn-sm" disabled style="opacity: 0.5;">
-            🚨 Confirm & Execute
+          <button id="btn-execute-power" class="btn btn-critical btn-sm" disabled style="opacity: 0.5;">
+            Confirm & Execute
           </button>
         </div>
       </div>
 
       <!-- Execution Output Box -->
-      <div class="panel" style="padding: 14px; background: #0a0d14;">
+      <div class="panel" style="padding: 14px; background: #FFFFFF; border: 1px solid var(--border-default);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-secondary);">Command Output Terminal</span>
             <span id="diag-status-pill" class="badge badge-info" style="font-size: 10px;">IDLE</span>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <button id="btn-emergency-abort" class="btn btn-xs btn-danger" style="display: none; align-items: center; gap: 4px; font-weight: 700;">
+            <button id="btn-emergency-abort" class="btn btn-xs btn-critical" style="display: none; align-items: center; gap: 4px; font-weight: 700;">
               ${renderIcon("alert-triangle", { size: "xs" })} Emergency Abort (Cancel Shutdown)
             </button>
             <span id="diag-exec-time" class="mono text-muted" style="font-size: 11px;">—</span>
           </div>
         </div>
 
-        <pre id="diag-output-console" class="mono" style="margin: 0; padding: 12px; background: #000; border-radius: var(--radius-sm); color: #00ff66; font-size: 11.5px; min-height: 140px; max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;">Awaiting diagnostic dispatch...</pre>
+        <pre id="diag-output-console" class="mono" style="margin: 0; padding: 12px; background: #0F172A; border-radius: var(--radius-sm); color: #F1F5F9; border: 1px solid #334155; font-size: 11.5px; min-height: 140px; max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;">Awaiting diagnostic dispatch...</pre>
       </div>
 
       <!-- Past Diagnostics on Host -->

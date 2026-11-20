@@ -249,11 +249,14 @@ class DiagnosticWorker:
         """
         server_url = self.config.get("server_url")
         api_key = self.config.get("api_key")
-        ca_cert = self.config.get("ca_cert_path")
+        ca_cert = self.config.get("ca_cert_path") or self.config.get("ca_bundle")
         device_uuid = self.config.get("device_uuid")
 
         if not server_url or not api_key:
             return False
+
+        # Normalize server_url so it represents base url (strip /api/v1/metrics if present)
+        base_url = server_url.replace("/api/v1/metrics", "").rstrip("/")
 
         # In production, use requests or urllib with strict TLS validation
         import urllib.request
@@ -273,7 +276,7 @@ class DiagnosticWorker:
 
         # 1. Poll for command
         host_id = self.config.get("host_id")
-        poll_url = f"{server_url.rstrip('/')}/api/v1/diagnostics/commands/poll"
+        poll_url = f"{base_url}/api/v1/diagnostics/commands/poll"
         if host_id:
             poll_url += f"?host_id={host_id}"
         req = urllib.request.Request(poll_url, headers=headers, method="GET")
@@ -323,7 +326,7 @@ class DiagnosticWorker:
             "failure_reason": f"Exited with code {exit_code}" if exit_code != 0 else None,
         }
 
-        submit_url = f"{server_url.rstrip('/')}/api/v1/diagnostics/commands/{cmd_id}/result"
+        submit_url = f"{base_url}/api/v1/diagnostics/commands/{cmd_id}/result"
         submit_bytes = json.dumps(result_payload).encode("utf-8")
         submit_headers = {
             **headers,

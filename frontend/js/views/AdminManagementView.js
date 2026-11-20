@@ -154,9 +154,9 @@ function renderDashboard(container, stats, requests, users) {
     <!-- Tab Content Area -->
     <div id="admin-tab-content">
       ${currentTab === "requests" ? renderRequestsTab(requests) :
-        (currentTab === "directory" ? renderDirectoryTab(users) :
+      (currentTab === "directory" ? renderDirectoryTab(users) :
         (currentTab === "assignments" ? renderAssignmentsTabPlaceholder() :
-        renderExplorerTabPlaceholder()))}
+          renderExplorerTabPlaceholder()))}
     </div>
   `;
 
@@ -233,18 +233,18 @@ function renderRequestsTab(requests) {
             ${requests.length === 0 ? `
               <tr><td colspan="8" class="text-muted" style="text-align: center; padding: 24px;">No administrator registration requests recorded.</td></tr>
             ` : requests.map(r => {
-              const isPendingApproval = r.status === "PENDING_SUPER_ADMIN_APPROVAL";
-              const isUnverified = r.status === "EMAIL_UNVERIFIED";
-              const isApproved = r.status === "APPROVED" || r.status === "ACTIVE";
-              const isRejected = r.status === "REJECTED";
+    const isPendingApproval = r.status === "PENDING_SUPER_ADMIN_APPROVAL";
+    const isUnverified = r.status === "EMAIL_UNVERIFIED";
+    const isApproved = r.status === "APPROVED" || r.status === "ACTIVE";
+    const isRejected = r.status === "REJECTED";
 
-              let statusBadge = `<span class="badge badge-info">${escapeHtml(r.status)}</span>`;
-              if (isPendingApproval) statusBadge = `<span class="badge badge-warning">AWAITING APPROVAL</span>`;
-              else if (isUnverified) statusBadge = `<span class="badge badge-info" style="opacity: 0.75;">EMAIL UNVERIFIED</span>`;
-              else if (isApproved) statusBadge = `<span class="badge badge-healthy">${escapeHtml(r.status)}</span>`;
-              else if (isRejected) statusBadge = `<span class="badge badge-critical">REJECTED</span>`;
+    let statusBadge = `<span class="badge badge-info">${escapeHtml(r.status)}</span>`;
+    if (isPendingApproval) statusBadge = `<span class="badge badge-warning">AWAITING APPROVAL</span>`;
+    else if (isUnverified) statusBadge = `<span class="badge badge-info" style="opacity: 0.75;">EMAIL UNVERIFIED</span>`;
+    else if (isApproved) statusBadge = `<span class="badge badge-healthy">${escapeHtml(r.status)}</span>`;
+    else if (isRejected) statusBadge = `<span class="badge badge-critical">REJECTED</span>`;
 
-              return `
+    return `
                 <tr data-request-id="${escapeHtml(r.id)}">
                   <td style="font-weight: 600;">${escapeHtml(r.full_name)}</td>
                   <td class="mono">${escapeHtml(r.email)}</td>
@@ -281,7 +281,7 @@ function renderRequestsTab(requests) {
                   </td>
                 </tr>
               `;
-            }).join("")}
+  }).join("")}
           </tbody>
         </table>
       </div>
@@ -315,18 +315,18 @@ function renderDirectoryTab(users) {
             ${users.length === 0 ? `
               <tr><td colspan="8" class="text-muted" style="text-align: center; padding: 24px;">No administrator accounts found.</td></tr>
             ` : users.map(u => {
-              const isSuper = u.role === "SUPER_ADMIN";
-              const isActive = u.is_active;
+    const isSuper = u.role === "SUPER_ADMIN";
+    const isActive = u.is_active;
 
-              const roleBadge = isSuper
-                ? `<span class="badge badge-warning" style="font-weight: 700; border: 1px solid var(--accent-amber);">${escapeHtml(u.role)}</span>`
-                : `<span class="badge badge-critical">${escapeHtml(u.role)}</span>`;
+    const roleBadge = isSuper
+      ? `<span class="badge badge-warning" style="font-weight: 700; border: 1px solid var(--accent-amber);">${escapeHtml(u.role)}</span>`
+      : `<span class="badge badge-critical">${escapeHtml(u.role)}</span>`;
 
-              const statusBadge = isActive
-                ? `<span class="badge badge-healthy">ACTIVE</span>`
-                : `<span class="badge badge-critical">DISABLED</span>`;
+    const statusBadge = isActive
+      ? `<span class="badge badge-healthy">ACTIVE</span>`
+      : `<span class="badge badge-critical">DISABLED</span>`;
 
-              return `
+    return `
                 <tr data-user-id="${escapeHtml(u.id)}">
                   <td class="mono font-weight-bold">${escapeHtml(u.email)}</td>
                   <td>${roleBadge}</td>
@@ -375,7 +375,7 @@ function renderDirectoryTab(users) {
                   </td>
                 </tr>
               `;
-            }).join("")}
+  }).join("")}
           </tbody>
         </table>
       </div>
@@ -1077,7 +1077,7 @@ function renderExplorerMainLayout(mount) {
       </div>
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-        <div style="padding: 10px 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 6px;">
+        <div style="padding: 10px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-default); border-radius: 6px;">
           <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Total Application Tables</div>
           <div style="font-size: 20px; font-weight: 700; margin-top: 4px;">${ov.total_tables} Tables</div>
           <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
@@ -1087,19 +1087,19 @@ function renderExplorerMainLayout(mount) {
           </div>
         </div>
 
-        <div style="padding: 10px 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 6px;">
+        <div style="padding: 10px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-default); border-radius: 6px;">
           <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Total Records Stored</div>
           <div style="font-size: 20px; font-weight: 700; margin-top: 4px;" class="mono">${ov.total_records.toLocaleString()}</div>
           <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Live across 23 tables</div>
         </div>
 
-        <div style="padding: 10px 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 6px;">
+        <div style="padding: 10px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-default); border-radius: 6px;">
           <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Physical Database Size</div>
           <div style="font-size: 20px; font-weight: 700; margin-top: 4px;">${ov.database_size_mb} MB</div>
           <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">${ov.database_size_bytes.toLocaleString()} bytes</div>
         </div>
 
-        <div style="padding: 10px 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 6px;">
+        <div style="padding: 10px 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-default); border-radius: 6px;">
           <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Concurrency & Safety</div>
           <div style="font-size: 20px; font-weight: 700; margin-top: 4px; color: var(--healthy);">Zero Ingestion Lock</div>
           <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">WAL multi-reader isolated</div>
@@ -1480,13 +1480,13 @@ function renderRecordsTable(container, data) {
           ${data.records.map(row => `
             <tr>
               ${cols.map(c => {
-                const val = row[c];
-                let displayVal = val === null || val === undefined ? '<span class="text-muted">NULL</span>' : escapeHtml(String(val));
-                if (typeof val === "boolean") {
-                  displayVal = val ? '<span class="text-healthy">TRUE</span>' : '<span class="text-muted">FALSE</span>';
-                }
-                return `<td style="padding: 6px 12px; white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(String(val ?? ''))}">${displayVal}</td>`;
-              }).join("")}
+    const val = row[c];
+    let displayVal = val === null || val === undefined ? '<span class="text-muted">NULL</span>' : escapeHtml(String(val));
+    if (typeof val === "boolean") {
+      displayVal = val ? '<span class="text-healthy">TRUE</span>' : '<span class="text-muted">FALSE</span>';
+    }
+    return `<td style="padding: 6px 12px; white-space: nowrap; max-width: 280px; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(String(val ?? ''))}">${displayVal}</td>`;
+  }).join("")}
             </tr>
           `).join("")}
         </tbody>
@@ -1612,7 +1612,7 @@ function renderSchemaTables(container, schema) {
         ${renderIcon("activity", { size: "xs" })} Physical Storage Indexes (${schema.indexes.length})
       </div>
       ${schema.indexes.length === 0 ? `
-        <div style="padding: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-muted); font-size: 12px;">
+        <div style="padding: 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-default); border-radius: 6px; color: var(--text-muted); font-size: 12px;">
           No explicit secondary indexes defined for table <code>${escapeHtml(schema.table)}</code>.
         </div>
       ` : `
@@ -1647,7 +1647,7 @@ function renderSchemaTables(container, schema) {
         ${renderIcon("arrow-right-left", { size: "xs" })} Foreign Key Referential Constraints (${schema.foreign_keys.length})
       </div>
       ${schema.foreign_keys.length === 0 ? `
-        <div style="padding: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-muted); font-size: 12px;">
+        <div style="padding: 14px; background: var(--bg-surface-elevated); border: 1px solid var(--border-default); border-radius: 6px; color: var(--text-muted); font-size: 12px;">
           No foreign key clauses defined for table <code>${escapeHtml(schema.table)}</code>.
         </div>
       ` : `

@@ -48,10 +48,10 @@ export function renderAuthView(container, initialMode = "login", tokenParam = ""
   function render() {
     container.innerHTML = `
       <div style="display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 120px); padding: 24px;">
-        <div class="panel" style="width: 100%; max-width: 480px; border: 1px solid var(--border-default); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);">
+        <div class="panel" style="width: 100%; max-width: 440px; background: #FFFFFF; border: 1px solid var(--border-default); box-shadow: var(--shadow-md); border-radius: var(--radius-lg); padding: 0; overflow: hidden;">
           <!-- Header Branding -->
-          <div style="text-align: center; padding: 28px 24px 20px; border-bottom: 1px solid var(--border-subtle);">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); color: var(--status-info); margin-bottom: 12px; border: 1px solid var(--border-highlight);">
+          <div style="text-align: center; padding: 24px 20px 18px; border-bottom: 1px solid var(--border-default); background: #FFFFFF;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 8px; background: #EFF6FF; color: var(--primary); margin-bottom: 12px; border: 1px solid #BFDBFE;">
               ${renderIcon("shield-check", { size: "lg" })}
             </div>
             <h2 style="font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 4px; color: var(--text-primary);">
@@ -63,23 +63,23 @@ export function renderAuthView(container, initialMode = "login", tokenParam = ""
           </div>
 
           <!-- Tab Selector -->
-          <div style="display: flex; border-bottom: 1px solid var(--border-subtle); background: var(--bg-surface-elevated);">
-            <button class="btn btn-sm ${mode === 'login' ? 'btn-primary' : ''}" id="auth-tab-login" style="flex: 1; border-radius: 0; border: none; justify-content: center; padding: 10px; font-size: 11px; font-weight: 600;">
+          <div style="display: flex; border-bottom: 1px solid var(--border-default); background: #F8FAFC;">
+            <button class="btn btn-sm ${mode === 'login' ? 'btn-primary' : 'btn-secondary'}" id="auth-tab-login" style="flex: 1; border-radius: 0; border: none; justify-content: center; padding: 10px; font-size: 11.5px; font-weight: 600; box-shadow: none;">
               ${renderIcon("lock", { size: "xs" })} Sign In
             </button>
-            <button class="btn btn-sm ${mode === 'request-access' ? 'btn-primary' : ''}" id="auth-tab-request" style="flex: 1; border-radius: 0; border: none; justify-content: center; padding: 10px; font-size: 11px; font-weight: 600;">
-              ${renderIcon("user-plus", { size: "xs" })} Request Access
+            <button class="btn btn-sm ${mode === 'request-access' ? 'btn-primary' : 'btn-secondary'}" id="auth-tab-request" style="flex: 1; border-radius: 0; border: none; justify-content: center; padding: 10px; font-size: 11.5px; font-weight: 600; box-shadow: none;">
+              ${renderIcon("user-plus", { size: "xs" })} Request
             </button>
-            <button class="btn btn-sm ${mode === 'forgot' ? 'btn-primary' : ''}" id="auth-tab-forgot" style="flex: 1; border-radius: 0; border: none; justify-content: center; padding: 10px; font-size: 11px; font-weight: 600;">
+            <button class="btn btn-sm ${mode === 'forgot' ? 'btn-primary' : 'btn-secondary'}" id="auth-tab-forgot" style="flex: 1; border-radius: 0; border: none; justify-content: center; padding: 10px; font-size: 11.5px; font-weight: 600; box-shadow: none;">
               ${renderIcon("key", { size: "xs" })} Recovery
             </button>
-            <button class="btn btn-sm ${mode === 'verify' ? 'btn-primary' : ''}" id="auth-tab-verify" style="flex: 1; border-radius: 0; border: none; justify-content: center; padding: 10px; font-size: 11px; font-weight: 600;">
+            <button class="btn btn-sm ${mode === 'verify' ? 'btn-primary' : 'btn-secondary'}" id="auth-tab-verify" style="flex: 1; border-radius: 0; border: none; justify-content: center; padding: 10px; font-size: 11.5px; font-weight: 600; box-shadow: none;">
               ${renderIcon("check-circle-2", { size: "xs" })} Verify
             </button>
           </div>
 
           <!-- Body Content Area -->
-          <div style="padding: 24px;" id="auth-form-container">
+          <div style="padding: 24px; background: #FFFFFF;" id="auth-form-container">
             ${mode === "login" ? renderLoginForm() : ""}
             ${mode === "request-access" ? renderRequestAccessForm() : ""}
             ${mode === "forgot" ? renderForgotForm() : ""}
@@ -336,7 +336,7 @@ export function renderAuthView(container, initialMode = "login", tokenParam = ""
       <form id="activate-admin-form" style="display: flex; flex-direction: column; gap: 16px;">
         <div id="auth-alert" style="display: none;"></div>
 
-        <div style="padding: 12px; border-radius: var(--radius-sm); background: rgba(59, 130, 246, 0.08); border: 1px solid var(--border-highlight); margin-bottom: 4px;">
+        <div style="padding: 12px; border-radius: var(--radius-md); background: #EFF6FF; border: 1px solid #BFDBFE; margin-bottom: 4px;">
           <div style="font-size: 12px; font-weight: 600; color: var(--status-info); margin-bottom: 2px;">
             ${renderIcon("shield-check", { size: "xs" })} Request Approved
           </div>

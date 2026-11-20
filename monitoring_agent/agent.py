@@ -119,11 +119,15 @@ class MonitoringAgent:
         try:
             from monitoring_agent.diagnostic_worker import DiagnosticWorker
             self.diagnostic_worker = DiagnosticWorker(config_path=self.config_path)
-            if not self.diagnostic_worker.config.get("server_url"):
-                base_url = server_url.replace("/api/v1/metrics", "").rstrip("/")
-                self.diagnostic_worker.config["server_url"] = base_url
+            raw_url = self.diagnostic_worker.config.get("server_url") or server_url
+            base_url = raw_url.replace("/api/v1/metrics", "").rstrip("/")
+            self.diagnostic_worker.config["server_url"] = base_url
+            if not self.diagnostic_worker.config.get("api_key") and api_key:
                 self.diagnostic_worker.config["api_key"] = api_key
+            if not self.diagnostic_worker.config.get("device_uuid") and self.device_uuid:
                 self.diagnostic_worker.config["device_uuid"] = self.device_uuid
+            if not self.diagnostic_worker.config.get("ca_bundle") and ca_bundle:
+                self.diagnostic_worker.config["ca_bundle"] = ca_bundle
         except Exception:
             self.diagnostic_worker = None
 

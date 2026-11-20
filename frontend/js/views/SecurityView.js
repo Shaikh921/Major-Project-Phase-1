@@ -39,33 +39,33 @@ export async function renderSecurityView(container) {
         <div class="summary-card ${summary.critical_events > 0 ? 'status-critical' : 'status-healthy'}">
           <div class="summary-card-header">
             <span>Critical Threats</span>
-            <span class="badge badge-critical">IMMEDIATE</span>
+            <span class="badge ${summary.critical_events > 0 ? 'badge-critical' : 'badge-healthy'}">${summary.critical_events > 0 ? 'IMMEDIATE ACTION' : 'SECURE'}</span>
           </div>
-          <div class="summary-card-value">${summary.critical_events}</div>
+          <div class="summary-card-value ${summary.critical_events > 0 ? 'text-critical' : 'text-healthy'}">${summary.critical_events}</div>
           <div class="summary-card-sub">
-            <span>Data exfiltration / high-risk exploits</span>
+            <span>Data exfiltration & high-risk exploits</span>
           </div>
         </div>
 
         <div class="summary-card ${summary.high_events > 0 ? 'status-warning' : 'status-info'}">
           <div class="summary-card-header">
             <span>High Severity</span>
-            <span class="badge badge-warning">ELEVATED</span>
+            <span class="badge ${summary.high_events > 0 ? 'badge-warning' : 'badge-neutral'}">${summary.high_events > 0 ? 'ELEVATED' : 'NOMINAL'}</span>
           </div>
-          <div class="summary-card-value">${summary.high_events}</div>
+          <div class="summary-card-value ${summary.high_events > 0 ? 'text-warning' : 'text-primary'}">${summary.high_events}</div>
           <div class="summary-card-sub">
-            <span>Brute-force & unauthorized privilege attempts</span>
+            <span>Brute-force & privilege escalation attempts</span>
           </div>
         </div>
 
         <div class="summary-card status-info">
           <div class="summary-card-header">
             <span>Total Tracked Incidents</span>
-            <span class="mono">Audit Trail</span>
+            <span class="badge badge-info">AUDIT TRAIL</span>
           </div>
           <div class="summary-card-value">${summary.total_events}</div>
           <div class="summary-card-sub">
-            <span>${summary.open_incidents} currently open/active</span>
+            <span>${summary.open_incidents} currently open or under investigation</span>
           </div>
         </div>
       </div>

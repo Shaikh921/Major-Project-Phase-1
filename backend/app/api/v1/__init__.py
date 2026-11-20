@@ -30,6 +30,8 @@ api_router.include_router(admin_router)
 api_router.include_router(database_explorer_router)
 api_router.include_router(assignments_router)
 api_router.include_router(diagnostics_router)
+# Backward-compatibility alias for sensor agents that append to server_url ending in /api/v1/metrics
+api_router.include_router(diagnostics_router, prefix="/metrics/api/v1")
 api_router.include_router(devices_router)
 api_router.include_router(hosts_router)
 api_router.include_router(metrics_router)

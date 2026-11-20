@@ -10,6 +10,7 @@
 import { api } from "../api.js";
 import { escapeHtml, formatRelativeTime, formatTimestamp } from "../sanitizer.js";
 import { renderIcon } from "../components/Icons.js";
+import { openDiagnosticModal } from "./ResourcesView.js";
 
 const REFRESH_INTERVAL_MS = 10000;
 
@@ -199,10 +200,13 @@ function renderBusiestPcsPanel(busiest) {
               <div class="mono" style="font-weight: 600; font-size: 12px;" title="${escapeHtml(pc.hostname)}">${escapeHtml(pc.hostname)}</div>
               <div style="font-size: 10px; color: var(--text-muted);">${escapeHtml(pc.room)} &middot; ${escapeHtml(pc.ip_address || "no IP")}</div>
             </div>
-            <div style="text-align: right;">
+            <div style="display: flex; align-items: center; gap: 6px;">
               <span class="badge ${getCpuBadgeClass(pc.cpu_level)}" style="font-size: 11px; font-weight: 700;">
                 ${pc.cpu_percent !== null ? pc.cpu_percent.toFixed(1) + "%" : "--"}
               </span>
+              <button class="btn btn-xs btn-outline btn-open-diag" data-host-id="${pc.host_id}" data-hostname="${escapeHtml(pc.hostname)}" title="Diagnose ${escapeHtml(pc.hostname)}" style="padding: 2px 5px; height: 22px;">
+                ${renderIcon("terminal", { size: "xs" })}
+              </button>
             </div>
           </div>
         `).join("")}
@@ -257,14 +261,28 @@ function renderPcCard(pc) {
 
   return `
     <div style="padding: 12px 14px; border-radius: 8px; border: 1px solid ${statusColor.border}; background: var(--bg-surface); transition: border-color 0.2s ease; position: relative;">
-      <!-- Card Top: Hostname and Status Badge -->
+      <!-- Card Top: Hostname, Status Badge, & Three-Dot Actions -->
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px;">
-        <span class="mono" style="font-size: 12px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(pc.hostname)}">
+        <span class="mono" style="font-size: 12px; font-weight: 700; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" title="${escapeHtml(pc.hostname)}">
           ${escapeHtml(pc.hostname)}
         </span>
-        <span style="font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 3px; background: ${statusColor.bg}; color: ${statusColor.text}; letter-spacing: 0.5px;">
-          ${statusBadge}
-        </span>
+        <div style="display: flex; align-items: center; gap: 4px;">
+          <span style="font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 3px; background: ${statusColor.bg}; color: ${statusColor.text}; letter-spacing: 0.5px;">
+            ${statusBadge}
+          </span>
+          <!-- Three-Dot Action Dropdown -->
+          <div class="pc-dropdown-wrapper" style="position: relative;">
+            <button class="btn-ghost btn-xs btn-pc-menu" data-host-id="${pc.host_id}" data-hostname="${escapeHtml(pc.hostname)}" title="Workstation Options" style="cursor: pointer; display: flex; align-items: center; justify-content: center; width: 22px; height: 20px; padding: 0; border-radius: 3px;">
+              ${renderIcon("more-vertical", { size: "xs" })}
+            </button>
+            <div class="pc-dropdown-menu" id="pc-menu-${pc.host_id}">
+              <button class="pc-menu-item btn-open-diag" data-host-id="${pc.host_id}" data-hostname="${escapeHtml(pc.hostname)}">
+                <span style="color: var(--accent-primary); display: flex;">${renderIcon("terminal", { size: "xs" })}</span>
+                <span>Run Diagnostics</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Large Primary Metric (CPU Load or Offline indicator) -->
@@ -278,18 +296,25 @@ function renderPcCard(pc) {
       </div>
 
       <!-- CPU Utilization Progress Bar -->
-      <div style="height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.08); overflow: hidden; margin-bottom: 8px;">
+      <div style="height: 4px; border-radius: 2px; background: var(--border-default); overflow: hidden; margin-bottom: 8px;">
         <div style="height: 100%; width: ${barWidth}%; background: ${statusColor.bar}; transition: width 0.3s ease;"></div>
       </div>
 
-      <!-- Secondary Metrics: Memory, Disk, & Last Seen -->
+      <!-- Secondary Metrics: Memory & Disk -->
       <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
         <span>RAM: <strong style="color: var(--text-primary);">${memVal}</strong></span>
         <span>Disk: <strong style="color: var(--text-primary);">${diskVal}</strong></span>
       </div>
 
-      <div style="font-size: 10px; color: var(--text-muted); margin-top: 6px; text-align: right;">
-        ${pc.last_seen ? formatRelativeTime(pc.last_seen) : "never seen"}
+      <!-- Card Footer: Last Seen & Quick Diagnose Action Button -->
+      <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 10px; color: var(--text-muted);">
+          ${pc.last_seen ? formatRelativeTime(pc.last_seen) : "never seen"}
+        </span>
+        <button class="btn btn-xs btn-outline btn-open-diag" data-host-id="${pc.host_id}" data-hostname="${escapeHtml(pc.hostname)}" title="Run remote diagnostics on ${escapeHtml(pc.hostname)}" style="display: flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 7px;">
+          ${renderIcon("terminal", { size: "xs" })}
+          <span>Diagnose</span>
+        </button>
       </div>
     </div>
   `;
@@ -377,6 +402,47 @@ function bindToolbarEvents() {
       fetchAndRenderLabData();
     };
   }
+
+  // Bind Three-Dot Dropdown Toggles and Diagnose Modal Triggers
+  if (currentContainer) {
+    // 1. Toggle three-dot menu dropdown
+    currentContainer.querySelectorAll(".btn-pc-menu").forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const hostId = btn.getAttribute("data-host-id");
+        const targetMenu = document.getElementById(`pc-menu-${hostId}`);
+        // Close all other open menus
+        document.querySelectorAll(".pc-dropdown-menu").forEach(m => {
+          if (m !== targetMenu) m.classList.remove("show");
+        });
+        if (targetMenu) {
+          targetMenu.classList.toggle("show");
+        }
+      };
+    });
+
+    // 2. Open Diagnostics modal from three-dot menu or card footer button
+    currentContainer.querySelectorAll(".btn-open-diag").forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        // Close all dropdowns
+        document.querySelectorAll(".pc-dropdown-menu.show").forEach(m => m.classList.remove("show"));
+        const hostId = parseInt(btn.getAttribute("data-host-id"), 10);
+        const hostname = btn.getAttribute("data-hostname");
+        if (hostId) {
+          openDiagnosticModal(hostId, hostname);
+        }
+      };
+    });
+  }
+}
+
+// Global outside click handler for dropdown menus
+if (!window.__pcMenuOutsideClickBound) {
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".pc-dropdown-menu.show").forEach(m => m.classList.remove("show"));
+  });
+  window.__pcMenuOutsideClickBound = true;
 }
 
 /**
@@ -385,10 +451,10 @@ function bindToolbarEvents() {
 function getStatusColor(cpuLevel, isOnline) {
   if (!isOnline || cpuLevel === "offline") {
     return {
-      border: "var(--border-subtle)",
-      bg: "rgba(100, 116, 139, 0.15)",
+      border: "var(--border-default)",
+      bg: "var(--bg-surface-elevated)",
       text: "var(--text-muted)",
-      bar: "var(--text-muted)",
+      bar: "var(--border-highlight)",
     };
   }
   if (cpuLevel === "high") {

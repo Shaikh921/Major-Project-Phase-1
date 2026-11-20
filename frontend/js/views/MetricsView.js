@@ -38,9 +38,9 @@ export async function renderMetricsView(container) {
         <div style="display: flex; gap: 8px;">
           <select id="metric-host-select" class="select-control">
             ${hosts.map(h => {
-              const srcTag = h.source_type === "REAL_AGENT" ? "[REAL AGENT]" : (h.source_type === "SIMULATED" ? "[SIMULATED]" : "[CLOUD]");
-              return `<option value="${h.id}">${srcTag} ${escapeHtml(h.hostname)} (${escapeHtml(h.environment)})</option>`;
-            }).join("")}
+      const srcTag = h.source_type === "REAL_AGENT" ? "[REAL AGENT]" : (h.source_type === "SIMULATED" ? "[SIMULATED]" : "[CLOUD]");
+      return `<option value="${h.id}">${srcTag} ${escapeHtml(h.hostname)} (${escapeHtml(h.environment)})</option>`;
+    }).join("")}
           </select>
           <select id="metric-limit-select" class="select-control">
             <option value="30">Last 30 Samples</option>
@@ -55,10 +55,10 @@ export async function renderMetricsView(container) {
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
           <span class="panel-title" id="active-host-chart-title">${renderIcon("activity", { size: "sm" })} Telemetry Stream: ${escapeHtml(defaultHost.hostname)}</span>
           <div style="display: flex; gap: 14px; font-size: 11px;">
-            <span style="color: #3b82f6;">● CPU %</span>
-            <span style="color: #10b981;">● Memory %</span>
-            <span style="color: #f59e0b;">● Disk %</span>
-            <span style="color: #ef4444; border-bottom: 1px dashed #ef4444;">- - 95% Critical Threshold</span>
+            <span style="color: #2563EB; font-weight: 500;">● CPU %</span>
+            <span style="color: #16A34A; font-weight: 500;">● Memory %</span>
+            <span style="color: #D97706; font-weight: 500;">● Disk %</span>
+            <span style="color: #DC2626; border-bottom: 1px dashed #DC2626; font-weight: 500;">- - 95% Critical Threshold</span>
           </div>
         </div>
 
@@ -78,7 +78,7 @@ export async function renderMetricsView(container) {
     const loadAndDrawMetrics = async () => {
       const hostId = hostSelect ? hostSelect.value : defaultHost.id;
       const limit = limitSelect ? parseInt(limitSelect.value, 10) : 60;
-      
+
       const selectedHostObj = hosts.find(h => String(h.id) === String(hostId)) || defaultHost;
       const titleEl = document.getElementById("active-host-chart-title");
       if (titleEl) titleEl.innerHTML = `${renderIcon("activity", { size: "sm" })} Telemetry Stream: ${escapeHtml(selectedHostObj.hostname)}`;
@@ -129,7 +129,7 @@ function drawTelemetryCanvas(series) {
   ctx.clearRect(0, 0, W, H);
 
   // Background Grid Lines
-  ctx.strokeStyle = "#1c263c";
+  ctx.strokeStyle = "#E2E8F0";
   ctx.lineWidth = 1;
 
   for (let p = 0; p <= 100; p += 25) {
@@ -139,14 +139,14 @@ function drawTelemetryCanvas(series) {
     ctx.lineTo(W - padR, y);
     ctx.stroke();
 
-    ctx.fillStyle = "#64748b";
+    ctx.fillStyle = "#64748B";
     ctx.font = "10px monospace";
     ctx.fillText(`${p}%`, 8, y + 3);
   }
 
   // Critical threshold line at 95%
   const critY = padT + (1 - 0.95) * (H - padT - padB);
-  ctx.strokeStyle = "rgba(239, 68, 68, 0.6)";
+  ctx.strokeStyle = "#DC2626";
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
   ctx.moveTo(padL, critY);
@@ -155,7 +155,7 @@ function drawTelemetryCanvas(series) {
   ctx.setLineDash([]);
 
   if (series.length < 2) {
-    ctx.fillStyle = "#94a3b8";
+    ctx.fillStyle = "#64748B";
     ctx.font = "12px sans-serif";
     ctx.fillText("Insufficient telemetry data points for visualization (minimum 2 required).", W / 2 - 160, H / 2);
     return;
@@ -179,9 +179,9 @@ function drawTelemetryCanvas(series) {
     ctx.stroke();
   };
 
-  plotLine("cpu_percent", "#3b82f6");
-  plotLine("memory_percent", "#10b981");
-  plotLine("disk_percent", "#f59e0b");
+  plotLine("cpu_percent", "#2563EB");
+  plotLine("memory_percent", "#16A34A");
+  plotLine("disk_percent", "#D97706");
 }
 
 function renderChartSummary(series) {
@@ -200,7 +200,7 @@ function renderChartSummary(series) {
   container.innerHTML = `
     <div class="panel" style="padding: 8px;">
       <div class="text-muted" style="font-size: 10.5px;">CURRENT CPU</div>
-      <div class="mono" style="font-size: 16px; font-weight: 700; color: #3b82f6;">${latest.cpu_percent.toFixed(1)}%</div>
+      <div class="mono" style="font-size: 16px; font-weight: 700; color: #2563EB;">${latest.cpu_percent.toFixed(1)}%</div>
     </div>
     <div class="panel" style="padding: 8px;">
       <div class="text-muted" style="font-size: 10.5px;">AVERAGE CPU</div>

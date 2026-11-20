@@ -19,11 +19,23 @@ export function maskSensitive(text) {
   return str.slice(0, 3) + "••••••••" + str.slice(-3);
 }
 
+export function parseUtcDate(isoString) {
+  if (!isoString) return null;
+  if (isoString instanceof Date) return isoString;
+  let str = String(isoString).trim();
+  if (!str) return null;
+  // If ISO string has no timezone indicator (no 'Z', no '+', no offset), treat as UTC
+  if (!str.endsWith("Z") && !str.includes("+") && !/-\d{2}:\d{2}$/.test(str)) {
+    str += "Z";
+  }
+  return new Date(str);
+}
+
 export function formatTimestamp(isoString) {
   if (!isoString) return "—";
   try {
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return escapeHtml(isoString);
+    const d = parseUtcDate(isoString);
+    if (!d || isNaN(d.getTime())) return escapeHtml(isoString);
     return d.toISOString().replace("T", " ").substring(0, 19) + " UTC";
   } catch {
     return escapeHtml(isoString);
@@ -33,7 +45,8 @@ export function formatTimestamp(isoString) {
 export function formatRelativeTime(isoString) {
   if (!isoString) return "—";
   try {
-    const d = new Date(isoString);
+    const d = parseUtcDate(isoString);
+    if (!d || isNaN(d.getTime())) return "—";
     const diffSec = Math.floor((Date.now() - d.getTime()) / 1000);
     if (diffSec < 10) return "just now";
     if (diffSec < 60) return `${diffSec}s ago`;

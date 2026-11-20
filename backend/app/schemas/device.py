@@ -2,9 +2,9 @@
 Pydantic Schemas for Device Enrollment & Workstation Lifecycle.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 
 class EnrollmentCodeCreate(BaseModel):
@@ -21,6 +21,14 @@ class EnrollmentCodeGenerated(BaseModel):
     expires_at: datetime
     created_at: datetime
 
+    @field_serializer("expires_at", "created_at", check_fields=False)
+    def serialize_utc_dt(self, dt: Optional[datetime], _info):
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
+
 
 class EnrollmentCodeRead(BaseModel):
     """Public/List view of enrollment codes omitting raw secret."""
@@ -33,6 +41,14 @@ class EnrollmentCodeRead(BaseModel):
     used_at: Optional[datetime] = None
     revoked_at: Optional[datetime] = None
     created_at: datetime
+
+    @field_serializer("expires_at", "created_at", "used_at", "revoked_at", check_fields=False)
+    def serialize_utc_dt(self, dt: Optional[datetime], _info):
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
 
 
 class DeviceEnrollRequest(BaseModel):
@@ -72,6 +88,14 @@ class DeviceClaimCredentialResponse(BaseModel):
     pc_number: Optional[str] = None
     rejection_reason: Optional[str] = None
     server_time: datetime
+
+    @field_serializer("server_time", check_fields=False)
+    def serialize_utc_dt(self, dt: Optional[datetime], _info):
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
 
 
 class DeviceApproveRequest(BaseModel):
@@ -121,6 +145,14 @@ class DeviceRead(BaseModel):
     retirement_confirmed: bool = False
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer("requested_at", "reviewed_at", "last_contact_at", "last_collection_at", "last_upload_at", check_fields=False)
+    def serialize_utc_dt(self, dt: Optional[datetime], _info):
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.isoformat()
 
 
 class DeviceSummaryStats(BaseModel):

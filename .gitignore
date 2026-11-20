@@ -107,6 +107,9 @@ htmlcov/
 backups/
 .backups/
 
+# Research Papers & Academic Audits
+Research_Paper/
+
 # Operating System & IDE Clutter
 .vscode/
 .idea/

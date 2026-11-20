@@ -278,6 +278,11 @@ def record_alert_feedback(
         operator_notes=feedback_in.operator_notes,
     )
     db.add(feedback)
+
+    # Automatically resolve alert when operator records final triage verdict
+    alert.status = "resolved"
+    alert.resolved_at = datetime.now(timezone.utc)
+
     db.commit()
     db.refresh(feedback)
     return feedback

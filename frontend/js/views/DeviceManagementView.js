@@ -11,7 +11,7 @@
 
 import { api } from "../api.js";
 import { authManager } from "../auth.js";
-import { escapeHtml, formatTimestamp } from "../sanitizer.js";
+import { escapeHtml, formatTimestamp, parseUtcDate } from "../sanitizer.js";
 import { renderIcon } from "../components/Icons.js";
 import { openModal, closeModal } from "../components/Modal.js";
 
@@ -72,7 +72,7 @@ function renderDashboard(container, stats, devices, codes) {
     <div class="view-header">
       <div class="view-title-group">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="color: var(--accent-cyan, #06b6d4); display: inline-flex;">
+          <span style="color: var(--primary); display: inline-flex;">
             ${renderIcon("monitor", { size: "lg" })}
           </span>
           <h1 style="margin: 0;">Lab PC Enrollment & Fleet Management</h1>
@@ -96,7 +96,7 @@ function renderDashboard(container, stats, devices, codes) {
         <div class="kpi-value">${stats.total_devices}</div>
         <div class="kpi-subtext">${stats.approved_active} Active | ${stats.disabled} Disabled</div>
       </div>
-      <div class="kpi-card" style="${pendingDevices.length > 0 ? 'border-color: var(--accent-amber); box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);' : ''}">
+      <div class="kpi-card" style="${pendingDevices.length > 0 ? 'border-color: var(--status-warning); border-width: 2px;' : ''}">
         <div class="kpi-label">Pending Approval</div>
         <div class="kpi-value text-${pendingDevices.length > 0 ? 'warning' : 'muted'}">${stats.pending_approval}</div>
         <div class="kpi-subtext">${pendingDevices.length > 0 ? 'Action required: physical mapping' : 'All devices triaged'}</div>
@@ -206,17 +206,17 @@ function renderFleetTab(target, devices, rootContainer) {
         </thead>
         <tbody>
           ${devices.map(d => {
-            const isOnline = d.is_online;
-            const healthStatus = d.telemetry_health || "UNKNOWN";
-            
-            let statusBadge = `<span class="badge badge-healthy">ONLINE</span>`;
-            if (!isOnline) {
-              statusBadge = `<span class="badge badge-critical" title="No telemetry received in > 180s">OFFLINE</span>`;
-            } else if (healthStatus === "STALE") {
-              statusBadge = `<span class="badge badge-warning" title="Online but metrics collection stale">STALE</span>`;
-            }
+    const isOnline = d.is_online;
+    const healthStatus = d.telemetry_health || "UNKNOWN";
 
-            return `
+    let statusBadge = `<span class="badge badge-healthy">ONLINE</span>`;
+    if (!isOnline) {
+      statusBadge = `<span class="badge badge-critical" title="No telemetry received in > 180s">OFFLINE</span>`;
+    } else if (healthStatus === "STALE") {
+      statusBadge = `<span class="badge badge-warning" title="Online but metrics collection stale">STALE</span>`;
+    }
+
+    return `
               <tr>
                 <td>
                   <div style="display: flex; align-items: center; gap: 6px;">
@@ -257,7 +257,7 @@ function renderFleetTab(target, devices, rootContainer) {
                 </td>
               </tr>
             `;
-          }).join("")}
+  }).join("")}
         </tbody>
       </table>
     </div>
@@ -384,17 +384,18 @@ function renderCodesTab(target, codes, rootContainer) {
           ${codes.length === 0 ? `
             <tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">No enrollment codes generated.</td></tr>
           ` : codes.map(c => {
-            const isExpired = new Date(c.expires_at) < new Date();
-            let badge = `<span class="badge badge-healthy">ACTIVE</span>`;
-            if (c.revoked_at) {
-              badge = `<span class="badge badge-critical">REVOKED</span>`;
-            } else if (c.is_used) {
-              badge = `<span class="badge badge-subtle">USED</span>`;
-            } else if (isExpired) {
-              badge = `<span class="badge badge-warning">EXPIRED</span>`;
-            }
+    const expiresAt = parseUtcDate(c.expires_at);
+    const isExpired = expiresAt ? expiresAt < new Date() : false;
+    let badge = `<span class="badge badge-healthy">ACTIVE</span>`;
+    if (c.revoked_at) {
+      badge = `<span class="badge badge-critical">REVOKED</span>`;
+    } else if (c.is_used) {
+      badge = `<span class="badge badge-subtle">USED</span>`;
+    } else if (isExpired) {
+      badge = `<span class="badge badge-warning">EXPIRED</span>`;
+    }
 
-            return `
+    return `
               <tr>
                 <td class="mono font-weight-bold">${escapeHtml(c.code_prefix)}••••••••</td>
                 <td>${badge}</td>
@@ -409,7 +410,7 @@ function renderCodesTab(target, codes, rootContainer) {
                 </td>
               </tr>
             `;
-          }).join("")}
+  }).join("")}
         </tbody>
       </table>
     </div>
